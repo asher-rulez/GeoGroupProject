@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="sp_gcm_token">sp_gcm_token</string>
+    <string name="sp_gcm_token_key">sp_gcm_token_key</string>
+
+    <!-- Is application running in foreground -->
+
+    <string name="is_app_running_in_foreground_token">is_running_token</string>
+    <string name="is_app_running_in_foreground_key">is_running_key</string>
+
+    <!-- Location refresh frequency -->
+
+    <string name="location_refresh_frequency_token">location_refresh_token</string>
+    <string name="location_refresh_frequency_key">location_refresh_key</string>
+
+    <!-- Last location saved -->
+
+    <string name="last_location_token">last_location_token</string>
+    <string name="last_location_latitude">last_latitude_key</string>
+    <string name="last_location_longitude">last_longitude_key</string>
+    <string name="last_location_datetime">last_location_date_key</string>
+
+    <!-- My nickname -->
+
+    <string name="nickname_token">nickname_token</string>
+    <string name="nickname_key">nickname_key</string>
+
+    <!-- Social account name -->
+
+    <string name="social_name_token">nickname_token</string>
+    <string name="social_name_key">nickname_key</string>
+
+    <!-- Location update service -->
+
+    <string name="location_service_running_token">loc_service_token</string>
+    <string name="location_service_running_key">loc_service_key</string>
+
+    <!-- Should stop location update service -->
+
+    <string name="should_stop_loc_service_token">should_stop_loc_service_token</string>
+    <string name="should_stop_loc_service_key">should_stop_loc_service_key</string>
+
+</resources>
