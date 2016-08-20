@@ -13,43 +13,37 @@
         android:name="com.google.android.gms.maps.SupportMapFragment"/>
 
     <android.support.design.widget.FloatingActionButton
-        android:id="@+id/fab_plus"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentRight="true"
-        android:layout_margin="@dimen/fab_margin"
-        app:backgroundTint="@color/plus_button_red"
-        android:src="@drawable/white_plus"
-        android:elevation="6dp"
-        app:pressedTranslationZ="12dp"/>
-
-    <android.support.design.widget.FloatingActionButton
         android:id="@+id/fab_create_group"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
         android:layout_alignParentRight="true"
-        android:layout_marginRight="@dimen/fab_margin"
-        android:layout_marginBottom="85dp"
+        android:layout_above="@+id/fab_join_group"
         app:backgroundTint="@color/plus_button_red"
         android:src="@drawable/fab_create"
-        android:elevation="6dp"
-        app:pressedTranslationZ="12dp"
-        android:visibility="invisible"/>
+        android:visibility="invisible"
+        android:layout_marginRight="10dp"/>
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/fab_join_group"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
+        android:layout_above="@+id/fab_plus"
         android:layout_alignParentRight="true"
-        android:layout_marginRight="@dimen/fab_margin"
-        android:layout_marginBottom="145dp"
         app:backgroundTint="@color/plus_button_red"
         android:src="@drawable/fab_join"
-        android:elevation="6dp"
-        app:pressedTranslationZ="12dp"
-        android:visibility="invisible"/>
+        android:visibility="invisible"
+        android:layout_marginRight="10dp"/>
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fab_plus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:padding="0dp"
+        app:backgroundTint="@color/plus_button_red"
+        android:src="@drawable/white_plus"
+        android:layout_marginRight="10dp"
+        android:layout_marginBottom="10dp"/>
 
 </RelativeLayout>

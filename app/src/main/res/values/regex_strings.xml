@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="regex_digits_letters_more_than_3">^[a-zA-Z0-9]{3,}</string>
+</resources>

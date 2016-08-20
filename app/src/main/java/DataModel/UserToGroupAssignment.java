@@ -8,6 +8,9 @@ import com.google.firebase.database.Exclude;
 public class UserToGroupAssignment {
     private final String MY_TAG = "geog_user_to_group";
 
+    public final static String UTGA_KEY_GROUP_ID = "groupID";
+    public final static String UTGA_KEY_USER_PROFILE_ID = "userProfileID";
+
     public UserToGroupAssignment(){}
 
     private String key;

@@ -30,7 +30,11 @@ import android.view.MenuItem;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.GooglePlayServicesUtil;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
+import Fragments.CreateJoinGroupFragment;
+import Fragments.LoginFragment;
 import Fragments.MapFragment;
 import Utils.CommonUtil;
 import Utils.GeoGroupBroadcastReceiver;
@@ -38,7 +42,10 @@ import Utils.SharedPreferencesUtil;
 
 public class MainActivity extends AppCompatActivity
         implements //NavigationView.OnNavigationItemSelectedListener,
-        MapFragment.OnMapFragmentInteractionListener, GeoGroupBroadcastReceiver.IBroadcastReceiverCallback {
+        MapFragment.OnMapFragmentInteractionListener,
+        GeoGroupBroadcastReceiver.IBroadcastReceiverCallback,
+        LoginFragment.OnLoginFragmentInteractionListener,
+        CreateJoinGroupFragment.OnCreateJoinGroupInteractionListener {
 
     private final String MY_TAG = "geog_main_act";
     private final static int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
@@ -49,13 +56,21 @@ public class MainActivity extends AppCompatActivity
     boolean isSideMenuOpened;
 
     private final int FRAGMENT_ID_MAP = 1;
+    private final int FRAGMENT_ID_LOGIN = 2;
+    private final int FRAGMENT_JOINCREATE = 3;
     int currentFragmentID;
     MapFragment mapFragment;
+    LoginFragment loginFragment;
+    CreateJoinGroupFragment createJoinFragment;
 
     boolean isInternetAvailable = false;
     boolean isGoogleServiceAvailable = false;
 
     GeoGroupBroadcastReceiver broadcastReceiver;
+
+    private DatabaseReference geoGroupFirebaseRef;
+
+    //region Activity overrides
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,13 +81,10 @@ public class MainActivity extends AppCompatActivity
         InitDrawerSideMenu();
 
         if (savedInstanceState == null) {
-            if (mapFragment == null)
-                mapFragment = new MapFragment();
-            FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-            transaction.add(R.id.fl_fragments_container, mapFragment);
-            transaction.commit();
-            currentFragmentID = FRAGMENT_ID_MAP;
+            SwitchToMapFragment();
         }
+
+        geoGroupFirebaseRef = FirebaseDatabase.getInstance().getReference();
     }
 
     @Override
@@ -127,6 +139,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onStop() {
         CommonUtil.SetIsApplicationRunningInForeground(this, false);
+        SharedPreferencesUtil.ClearLastLocationSavedDateTimeInMillis(this);
         if (broadcastReceiver == null) {
             unregisterReceiver(broadcastReceiver);
             broadcastReceiver = null;
@@ -153,12 +166,22 @@ public class MainActivity extends AppCompatActivity
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
-            Intent intent = new Intent(Intent.ACTION_MAIN);
-            intent.addCategory(Intent.CATEGORY_HOME);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(intent);
+            if(currentFragmentID == FRAGMENT_ID_MAP) {
+                Intent intent = new Intent(Intent.ACTION_MAIN);
+                intent.addCategory(Intent.CATEGORY_HOME);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+            } else {
+                if(currentFragmentID == FRAGMENT_JOINCREATE && createJoinFragment != null)
+                    createJoinFragment.ClearFields();
+                super.onBackPressed();
+            }
         }
     }
+
+    //endregion
+
+    //region controls init
 
     private void InitToolbar() {
         toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -186,57 +209,21 @@ public class MainActivity extends AppCompatActivity
         actionBarDrawerToggle.syncState();
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.main, menu);
-        return true;
-    }
+    //endregion
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
+    //region dialogs
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
 
-        return super.onOptionsItemSelected(item);
-    }
 
-//    @SuppressWarnings("StatementWithEmptyBody")
-//    @Override
-//    public boolean onNavigationItemSelected(MenuItem item) {
-//        // Handle navigation view item clicks here.
-//        int id = item.getItemId();
-//
-//        if (id == R.id.nav_camera) {
-//            // Handle the camera action
-//        } else if (id == R.id.nav_gallery) {
-//
-//        } else if (id == R.id.nav_slideshow) {
-//
-//        } else if (id == R.id.nav_manage) {
-//
-//        } else if (id == R.id.nav_share) {
-//
-//        } else if (id == R.id.nav_send) {
-//
-//        }
-//
-//        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-//        drawer.closeDrawer(GravityCompat.START);
-//        return true;
-//    }
+    //endregion
 
-    @Override
-    public void onFragmentInteraction(Uri uri) {
-        //todo: replace with other method(s)
-    }
+    //region firebase methods
+
+
+
+    //endregion
+
+    //region broadcast listener
 
     @Override
     public void onBroadcastReceived(Intent intent) {
@@ -250,6 +237,10 @@ public class MainActivity extends AppCompatActivity
                 break;
         }
     }
+
+    //endregion
+
+    //region check internet and play services
 
     protected boolean CheckInternetConnection() {
         Log.i(MY_TAG, "Checking internet connection...");
@@ -287,4 +278,105 @@ public class MainActivity extends AppCompatActivity
 
     public void OnInternetNotConnected() {
     }
+
+    //endregion
+
+    //region fragments and callbacks
+
+    private void SwitchToMapFragment(){
+        if (mapFragment == null)
+            mapFragment = new MapFragment();
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.fl_fragments_container, mapFragment);
+        for(int i = 0; i < getSupportFragmentManager().getBackStackEntryCount(); i++){
+            getSupportFragmentManager().popBackStackImmediate();
+        }
+        transaction.commit();
+        currentFragmentID = FRAGMENT_ID_MAP;
+    }
+
+    private void SwitchToLoginFragment(){
+        if(loginFragment == null)
+            loginFragment = new LoginFragment();
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.fl_fragments_container, loginFragment);
+        transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+        transaction.addToBackStack("login");
+        transaction.commit();
+        currentFragmentID = FRAGMENT_ID_LOGIN;
+    }
+
+    private void SwitchToCreateJoinFragment(int actionCode){
+        if(createJoinFragment == null)
+            createJoinFragment = new CreateJoinGroupFragment();
+        createJoinFragment.SetAction(actionCode);
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.fl_fragments_container, createJoinFragment);
+        transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+        transaction.addToBackStack("createJoin");
+        transaction.commit();
+        currentFragmentID = FRAGMENT_JOINCREATE;
+    }
+
+    @Override
+    public void onLoginFragmentInteraction(Uri uri) {
+
+    }
+
+    @Override
+    public void onLoginMade(int afterLoginAction) {
+        SwitchToMapFragment();
+        //todo:continue to action
+    }
+
+    @Override
+    public void showLoginFragmentForAction(int actionCode) {
+        SwitchToLoginFragment();
+        loginFragment.SetAfterLoginAction(actionCode);
+    }
+
+    @Override
+    public void openCreateJoinGroupFragment(int actionCode) {
+        SwitchToCreateJoinFragment(actionCode);
+    }
+
+    @Override
+    public void onCancelCreateJoinGroup() {
+        onBackPressed();
+    }
+
+    @Override
+    public void onSuccessCreateJoinGroup() {
+        SwitchToMapFragment();
+        //todo: start listening to group
+    }
+
+    //endregion
+
+    //region not used
+
+//    @Override
+//    public boolean onCreateOptionsMenu(Menu menu) {
+//        // Inflate the menu; this adds items to the action bar if it is present.
+//        getMenuInflater().inflate(R.menu.main, menu);
+//        return true;
+//    }
+//
+//    @Override
+//    public boolean onOptionsItemSelected(MenuItem item) {
+//        // Handle action bar item clicks here. The action bar will
+//        // automatically handle clicks on the Home/Up button, so long
+//        // as you specify a parent activity in AndroidManifest.xml.
+//        int id = item.getItemId();
+//
+//        //noinspection SimplifiableIfStatement
+//        if (id == R.id.action_settings) {
+//            return true;
+//        }
+//
+//        return super.onOptionsItemSelected(item);
+//    }
+
+    //endregion
+
 }

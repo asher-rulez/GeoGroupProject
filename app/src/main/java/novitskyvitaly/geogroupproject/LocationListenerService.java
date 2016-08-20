@@ -84,6 +84,8 @@ public class LocationListenerService extends Service implements GoogleApiClient.
     @Override
     public void onConnected(@Nullable Bundle bundle) {
         if(SharedPreferencesUtil.GetShouldStopService(this)){
+            Log.i(MY_TAG, "stop location service by sp value");
+            SharedPreferencesUtil.SetShouldStopService(this, false);
             stopSelf();
             return;
         }
@@ -116,13 +118,12 @@ public class LocationListenerService extends Service implements GoogleApiClient.
 
     @Override
     public void onLocationChanged(Location location) {
+        if(location == null) return;
         Log.i(MY_TAG, "onLocationChanged");
         long a=SharedPreferencesUtil.GetLastLocationSavedDateTimeInMillis(this);
-                long b=SharedPreferencesUtil.GetLocationRefreshFrequency(this);
-                        long c=new Date().getTime();
-        if(a
-                + b
-                        <= c) {
+        long b=SharedPreferencesUtil.GetLocationRefreshFrequency(this);
+        long c=new Date().getTime();
+        if(a + b <= c) {
             SharedPreferencesUtil.SaveLocationInSharedPreferences(
                     this, mLastLocation.getLatitude(), mLastLocation.getLongitude(), new Date());
             Intent intent = new Intent(GeoGroupBroadcastReceiver.BROADCAST_REC_INTENT_FILTER);

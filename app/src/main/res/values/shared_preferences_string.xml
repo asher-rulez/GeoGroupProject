@@ -26,6 +26,11 @@
     <string name="nickname_token">nickname_token</string>
     <string name="nickname_key">nickname_key</string>
 
+    <!-- My profile ID -->
+
+    <string name="profile_id_token">profile_id_token</string>
+    <string name="profile_id_key">profile_id_key</string>
+
     <!-- Social account name -->
 
     <string name="social_name_token">nickname_token</string>

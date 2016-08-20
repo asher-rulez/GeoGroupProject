@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    
+    <!-- select nickname dialog -->
+    <string name="login_btn_use_nickname">maybe later, use nickname for now</string>
+    <string name="select_nickname_dialog_title">Please select nickname:</string>
+    <string name="validation_message_nickname_too_short">Nickname should contain at least 3 symbols</string>
+    <string name="validation_message_nickname_symbols">Only letters and digits allowed</string>
+
+    <!-- create/join group dialog -->
+    <string name="create_group_title">Create group</string>
+    <string name="join_group_title">Join group</string>
+    <string name="select_group_name_hint">Select group name</string>
+    <string name="select_new_group_password_hint">Enter password for group</string>
+    <string name="validation_message_group_name_length">Group name should be at least 3 symbols</string>
+    <string name="validation_message_password_length">Password should be at least 3 symbols</string>
+    <string name="validation_message_group_name_unique">You already have group with such name</string>
+    <string name="validation_message_already_assigned">You already joined this group</string>
+    <string name="validation_message_no_such_group">Group not found</string>
+    <string name="enter_existing_group_name_hint">Enter group name</string>
+    <string name="enter_existing_group_password_hint">Enter password</string>
+    <string name="group_doesnt_exist">Group not found</string>
+    <string name="password_incorrect">Password incorrect</string>
+    <string name="group_btn_create">Create</string>
+    <string name="group_btn_join">Join</string>
+
+    <!-- common -->
+    <string name="common_ok">Ok</string>
+    <string name="common_cancel">Cancel</string>
+</resources>

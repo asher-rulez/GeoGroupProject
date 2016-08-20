@@ -8,11 +8,16 @@ import com.google.firebase.database.Exclude;
 public class Group {
     private final String MY_TAG = "geog_group";
 
+    public static final String GROUP_KEY_NAME = "name";
+    public static final String GROUP_KEY_GENERATED_ID = "generatedID";
+    public static final String GROUP_KEY_OWNER_PROFILE_ID = "ownerProfileID";
+    public static final String GROUP_KEY_PASSWORD = "password";
+
     private String key;
-    private String GeneratedID;
-    private String Name;
-    private String OwnerProfileID;
-    private String Password;
+    private String generatedID;
+    private String name;
+    private String ownerProfileID;
+    private String password;
 
     @Exclude
     public String getKey() {
@@ -25,34 +30,34 @@ public class Group {
     }
 
     public String getGeneratedID() {
-        return GeneratedID;
+        return generatedID;
     }
 
     public void setGeneratedID(String generatedID) {
-        GeneratedID = generatedID;
+        this.generatedID = generatedID;
     }
 
     public String getName() {
-        return Name;
+        return name;
     }
 
     public void setName(String name) {
-        Name = name;
+        this.name = name;
     }
 
     public String getOwnerProfileID() {
-        return OwnerProfileID;
+        return ownerProfileID;
     }
 
     public void setOwnerProfileID(String ownerProfileID) {
-        OwnerProfileID = ownerProfileID;
+        this.ownerProfileID = ownerProfileID;
     }
 
     public String getPassword() {
-        return Password;
+        return password;
     }
 
     public void setPassword(String password) {
-        Password = password;
+        this.password = password;
     }
 }

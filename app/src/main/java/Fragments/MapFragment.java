@@ -12,6 +12,8 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
+import android.util.Log;
+import android.view.InflateException;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,21 +27,38 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
+import com.google.firebase.database.ValueEventListener;
 
+import DataModel.User;
 import Utils.CommonUtil;
+import Utils.SharedPreferencesUtil;
 import novitskyvitaly.geogroupproject.R;
 
 public class MapFragment extends SupportMapFragment implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, GoogleMap.OnInfoWindowClickListener, View.OnClickListener {
 
     private static final String MY_TAG = "geog_mapFragment";
 
+    private static View view;
+
     SupportMapFragment mapFragment;
     GoogleMap googleMap;
+    Location lastLocation;
 
     private Context appContext;
     private OnMapFragmentInteractionListener mListener;
 
     private static final int REQUEST_CODE_ASK_LOCATION_PERMISSION = 10;
+    public static final int ACTION_CODE_FOR_JOIN_GROUP = 11;
+    public static final int ACTION_CODE_FOR_CREATE_GROUP = 12;
+    private static final int AUTH_TYPE_NICKNAME = 13;
+    private static final int AUTH_TYPE_FIREBASE = 14;
 
     FloatingActionButton fab_plus;
     FloatingActionButton fab_create_group;
@@ -54,13 +73,24 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         // Required empty public constructor
     }
 
+    //region Fragment overrides
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_map, container, false);
+
+        if(view != null){
+            ViewGroup parent = (ViewGroup)view.getParent();
+            if(parent != null)
+                parent.removeView(view);
+        }
+        try {
+            view = inflater.inflate(R.layout.fragment_map, container, false);
+        } catch (InflateException e){
+            e.printStackTrace();
+        }
+        return view;
     }
 
     @Override
@@ -73,19 +103,6 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         InitFABs();
     }
 
-    private void InitFABs(){
-        fab_plus = (FloatingActionButton)getView().findViewById(R.id.fab_plus);
-        fab_plus.setOnClickListener(this);
-        fab_create_group = (FloatingActionButton)getView().findViewById(R.id.fab_create_group);
-        fab_create_group.setOnClickListener(this);
-        fab_join_group = (FloatingActionButton)getView().findViewById(R.id.fab_join_group);
-        fab_join_group.setOnClickListener(this);
-        fab_appear_anim = AnimationUtils.loadAnimation(getContext(), R.anim.fab_appear);
-        fab_collapse_anim = AnimationUtils.loadAnimation(getContext(), R.anim.fab_collapse);
-        fab_plus_to_x_rotate_anim = AnimationUtils.loadAnimation(getContext(), R.anim.fab_rotate_plus_to_x);
-        fab_x_to_plus_rotate_anim = AnimationUtils.loadAnimation(getContext(), R.anim.fab_rotate_x_to_plus);
-    }
-
     @Override
     public void onStart() {
         super.onStart();
@@ -94,13 +111,6 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
     @Override
     public void onResume() {
         super.onResume();
-    }
-
-    // TODO: Rename method, update argument and hook method into UI event
-    public void onButtonPressed(Uri uri) {
-        if (mListener != null) {
-            mListener.onFragmentInteraction(uri);
-        }
     }
 
     @Override
@@ -120,6 +130,27 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
         super.onDetach();
         mListener = null;
     }
+
+    //endregion
+
+    //region Controls init
+
+    private void InitFABs(){
+        fab_plus = (FloatingActionButton)getView().findViewById(R.id.fab_plus);
+        fab_plus.setOnClickListener(this);
+        fab_create_group = (FloatingActionButton)getView().findViewById(R.id.fab_create_group);
+        fab_create_group.setOnClickListener(this);
+        fab_join_group = (FloatingActionButton)getView().findViewById(R.id.fab_join_group);
+        fab_join_group.setOnClickListener(this);
+        fab_appear_anim = AnimationUtils.loadAnimation(getContext(), R.anim.fab_appear);
+        fab_collapse_anim = AnimationUtils.loadAnimation(getContext(), R.anim.fab_collapse);
+        fab_plus_to_x_rotate_anim = AnimationUtils.loadAnimation(getContext(), R.anim.fab_rotate_plus_to_x);
+        fab_x_to_plus_rotate_anim = AnimationUtils.loadAnimation(getContext(), R.anim.fab_rotate_x_to_plus);
+    }
+
+    //endregion
+
+    //region Map
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
@@ -148,21 +179,14 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
             googleMap.setOnMarkerClickListener(this);
             googleMap.setOnInfoWindowClickListener(this);
             googleMap.getUiSettings().setMyLocationButtonEnabled(false);
+            if(lastLocation != null)
+                CenterMapOnPosition(lastLocation);
         }
 
     }
 
-    @Override
-    public boolean onMarkerClick(Marker marker) {
-        return false;
-    }
-
-    @Override
-    public void onInfoWindowClick(Marker marker) {
-
-    }
-
     public void CenterMapOnPosition(Location location) {
+        lastLocation = location;
         if(location != null)
             AnimateCameraFocusOnLatLng(location, null);
     }
@@ -175,6 +199,10 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
                 zoomLevel == null ? 15 : zoomLevel);
         googleMap.animateCamera(cameraUpdate);
     }
+
+    //endregion
+
+    //region Clicks
 
     @Override
     public void onClick(View view) {
@@ -195,23 +223,74 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
                     fab_create_group.setClickable(true);
                     isExpanded = true;
                 }
-
+                break;
+            case R.id.fab_create_group:
+                CheckAuthForActionCode(ACTION_CODE_FOR_CREATE_GROUP);
+                break;
+            case R.id.fab_join_group:
+                CheckAuthForActionCode(ACTION_CODE_FOR_JOIN_GROUP);
                 break;
         }
     }
 
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     * <p/>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
-     */
-    public interface OnMapFragmentInteractionListener {
-        // TODO: Update argument type and name
-        void onFragmentInteraction(Uri uri);
+    @Override
+    public boolean onMarkerClick(Marker marker) {
+        return false;
     }
+
+    @Override
+    public void onInfoWindowClick(Marker marker) {
+
+    }
+
+    //endregion
+
+    //region Join/create group
+
+    private void JoinCreateGroupByActionCodeAndAuthType(int actionCode, int authType){
+        //Log.i(MY_TAG, "JoinCreateGroupByActionCodeAndAuthType");
+        if(mListener != null)
+            mListener.openCreateJoinGroupFragment(actionCode);
+    }
+
+    //endregion
+
+    //region Firebase
+
+    private void CheckAuthForActionCode(int actionCode){
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if(user == null){
+            String username = SharedPreferencesUtil.GetMyNickname(getContext());
+            if(username.equals("")){
+                SwitchToLoginFragmentForActionCode(actionCode);
+            } else JoinCreateGroupByActionCodeAndAuthType(actionCode, AUTH_TYPE_NICKNAME);
+        } else JoinCreateGroupByActionCodeAndAuthType(actionCode, AUTH_TYPE_FIREBASE);
+    }
+
+//    private boolean CheckIfAuthorizedToFirebase(){
+//        FirebaseAuth firebaseAuthorization = FirebaseAuth.getInstance();
+//        firebaseAuthorization.addAuthStateListener(new FirebaseAuth.AuthStateListener() {
+//            @Override
+//            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+//                FirebaseUser user = firebaseAuth.getCurrentUser()
+//            }
+//        });
+//    }
+
+    //endregion
+
+    //region Interaction with parent activity
+
+    private void SwitchToLoginFragmentForActionCode(int actionCode){
+        Log.i(MY_TAG, "SwitchToLoginFragmentForActionCode");
+        mListener.showLoginFragmentForAction(actionCode);
+    }
+
+    public interface OnMapFragmentInteractionListener {
+        void showLoginFragmentForAction(int actionCode);
+        void openCreateJoinGroupFragment(int actionCode);
+    }
+
+    //endregion
+
 }

@@ -43,6 +43,13 @@ public class SharedPreferencesUtil {
         editor.commit();
     }
 
+    public static void ClearLastLocationSavedDateTimeInMillis(Context ctx){
+        SharedPreferences sp = ctx.getSharedPreferences(ctx.getString(R.string.last_location_token), Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sp.edit();
+        editor.putLong(ctx.getString(R.string.last_location_datetime), -1);
+        editor.commit();
+    }
+
     public static long GetLastLocationSavedDateTimeInMillis(Context ctx){
         SharedPreferences sp = ctx.getSharedPreferences(ctx.getString(R.string.last_location_token), Context.MODE_PRIVATE);
         return sp.getLong(ctx.getString(R.string.last_location_datetime), -1);
@@ -65,6 +72,18 @@ public class SharedPreferencesUtil {
     public static String GetMyNickname(Context ctx){
         SharedPreferences sp = ctx.getSharedPreferences(ctx.getString(R.string.nickname_token), Context.MODE_PRIVATE);
         return sp.getString(ctx.getString(R.string.nickname_key), "");
+    }
+
+    public static void SaveProfileIDInSharedPreferences(Context ctx, String nickname){
+        SharedPreferences sp = ctx.getSharedPreferences(ctx.getString(R.string.profile_id_token), Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sp.edit();
+        editor.putString(ctx.getString(R.string.profile_id_key), nickname);
+        editor.commit();
+    }
+
+    public static String GetMyProfileID(Context ctx){
+        SharedPreferences sp = ctx.getSharedPreferences(ctx.getString(R.string.profile_id_token), Context.MODE_PRIVATE);
+        return sp.getString(ctx.getString(R.string.profile_id_key), "");
     }
 
     public static void SaveSocialNameInSharedPreferences(Context ctx, String nickname){

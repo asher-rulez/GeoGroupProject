@@ -8,44 +8,49 @@ import com.google.firebase.database.Exclude;
 public class User {
     private final String MY_TAG = "geog_user";
 
+    public static final String USER_KEY_USERNAME = "username";
+    public static final String USER_KEY_PROFILEID = "profileID";
+    public static final String USER_KEY_PROFILETYPEID = "profileTypeID";
+    public static final String USER_KEY_PHOTOURL = "photoURL";
+
     public User(){ }
 
     private String key;
-    private String Username;
-    private long ProfileTypeID;
-    private String ProfileID;
-    private String PhotoURL;
+    private String username;
+    private long profileTypeID;
+    private String profileID;
+    private String photoURL;
 
     public String getUsername() {
-        return Username;
+        return username;
     }
 
     public void setUsername(String username) {
-        Username = username;
+        this.username = username;
     }
 
     public long getProfileTypeID() {
-        return ProfileTypeID;
+        return profileTypeID;
     }
 
     public void setProfileTypeID(long profileTypeID) {
-        ProfileTypeID = profileTypeID;
+        this.profileTypeID = profileTypeID;
     }
 
     public String getProfileID() {
-        return ProfileID;
+        return profileID;
     }
 
     public void setProfileID(String profileID) {
-        ProfileID = profileID;
+        this.profileID = profileID;
     }
 
     public String getPhotoURL() {
-        return PhotoURL;
+        return photoURL;
     }
 
     public void setPhotoURL(String photoURL) {
-        PhotoURL = photoURL;
+        this.photoURL = photoURL;
     }
 
     @Exclude
