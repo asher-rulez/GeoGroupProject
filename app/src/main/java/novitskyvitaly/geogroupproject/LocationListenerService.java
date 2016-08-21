@@ -49,14 +49,14 @@ public class LocationListenerService extends Service implements GoogleApiClient.
     @Override
     public void onCreate() {
         super.onCreate();
-        if(mGoogleApiClient == null)
+        if (mGoogleApiClient == null)
             buildGoogleApiClient();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         SharedPreferencesUtil.SetIsLocationUpdateServiceRunning(this, true);
-        if(!mGoogleApiClient.isConnected())
+        if (!mGoogleApiClient.isConnected())
             mGoogleApiClient.connect();
         return Service.START_STICKY_COMPATIBILITY;
     }
@@ -83,7 +83,7 @@ public class LocationListenerService extends Service implements GoogleApiClient.
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-        if(SharedPreferencesUtil.GetShouldStopService(this)){
+        if (SharedPreferencesUtil.GetShouldStopService(this)) {
             Log.i(MY_TAG, "stop location service by sp value");
             SharedPreferencesUtil.SetShouldStopService(this, false);
             stopSelf();
@@ -92,14 +92,14 @@ public class LocationListenerService extends Service implements GoogleApiClient.
         Log.i(MY_TAG, "onConnected");
         mLocationRequest = LocationRequest.create();
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        mLocationRequest.setInterval(100); // Update location every second
+        mLocationRequest.setInterval(SharedPreferencesUtil.GetLocationRefreshFrequency(this));
 
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             Intent intent = new Intent(GeoGroupBroadcastReceiver.BROADCAST_REC_INTENT_FILTER);
             intent.putExtra(GeoGroupBroadcastReceiver.BROADCAST_EXTRA_ACTION_KEY,
                     GeoGroupBroadcastReceiver.ACTION_CODE_LOCATION_PERMISSION_NEEDED);
             sendBroadcast(intent);
-            SharedPreferencesUtil.SetIsLocationUpdateServiceRunning(this,false);
+            SharedPreferencesUtil.SetIsLocationUpdateServiceRunning(this, false);
             this.stopSelf();
             return;
         }
@@ -107,7 +107,7 @@ public class LocationListenerService extends Service implements GoogleApiClient.
                 .requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
         mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
                 mGoogleApiClient);
-        if(mLastLocation != null)
+        if (mLastLocation != null)
             onLocationChanged(mLastLocation);
     }
 
@@ -118,20 +118,15 @@ public class LocationListenerService extends Service implements GoogleApiClient.
 
     @Override
     public void onLocationChanged(Location location) {
-        if(location == null) return;
+        if (location == null) return;
         Log.i(MY_TAG, "onLocationChanged");
-        long a=SharedPreferencesUtil.GetLastLocationSavedDateTimeInMillis(this);
-        long b=SharedPreferencesUtil.GetLocationRefreshFrequency(this);
-        long c=new Date().getTime();
-        if(a + b <= c) {
-            SharedPreferencesUtil.SaveLocationInSharedPreferences(
-                    this, mLastLocation.getLatitude(), mLastLocation.getLongitude(), new Date());
-            Intent intent = new Intent(GeoGroupBroadcastReceiver.BROADCAST_REC_INTENT_FILTER);
-            intent.putExtra(GeoGroupBroadcastReceiver.BROADCAST_EXTRA_ACTION_KEY,
-                    GeoGroupBroadcastReceiver.ACTION_CODE_USER_LOCATION_RECEIVED);
-            intent.putExtra(GeoGroupBroadcastReceiver.BROADCAST_EXTRA_LOCATION_REPORT_KEY, location);
-            sendBroadcast(intent);
-        }
+        SharedPreferencesUtil.SaveLocationInSharedPreferences(
+                this, mLastLocation.getLatitude(), mLastLocation.getLongitude(), new Date());
+        Intent intent = new Intent(GeoGroupBroadcastReceiver.BROADCAST_REC_INTENT_FILTER);
+        intent.putExtra(GeoGroupBroadcastReceiver.BROADCAST_EXTRA_ACTION_KEY,
+                GeoGroupBroadcastReceiver.ACTION_CODE_USER_LOCATION_RECEIVED);
+        intent.putExtra(GeoGroupBroadcastReceiver.BROADCAST_EXTRA_LOCATION_REPORT_KEY, location);
+        sendBroadcast(intent);
     }
 
     @Override

@@ -2,10 +2,12 @@ package DataModel;
 
 import com.google.firebase.database.Exclude;
 
+import Utils.FirebaseUtil;
+
 /**
  * Created by Asher on 19.08.2016.
  */
-public class UserToGroupAssignment {
+public class UserToGroupAssignment implements IFirebaseSavable {
     private final String MY_TAG = "geog_user_to_group";
 
     public final static String UTGA_KEY_GROUP_ID = "groupID";
@@ -43,4 +45,9 @@ public class UserToGroupAssignment {
         this.key = key;
     }
 
+    @Exclude
+    @Override
+    public int getSavableClassType() {
+        return FirebaseUtil.FIREBASE_SAVABLE_TYPE_USER_TO_GROUP_ASSIGNMENT;
+    }
 }

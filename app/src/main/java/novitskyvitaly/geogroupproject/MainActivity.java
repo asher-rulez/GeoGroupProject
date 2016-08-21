@@ -50,6 +50,11 @@ public class MainActivity extends AppCompatActivity
     private final String MY_TAG = "geog_main_act";
     private final static int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
 
+    public static final int ACTION_CODE_FOR_JOIN_GROUP = 11;
+    public static final int ACTION_CODE_FOR_CREATE_GROUP = 12;
+    //public static final int AUTH_TYPE_NICKNAME = 13;
+    //public static final int AUTH_TYPE_FIREBASE = 14;
+
     DrawerLayout drawer;
     Toolbar toolbar;
     ProgressDialog progressDialog = null;

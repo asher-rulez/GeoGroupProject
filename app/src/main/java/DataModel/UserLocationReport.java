@@ -2,10 +2,12 @@ package DataModel;
 
 import com.google.firebase.database.Exclude;
 
+import Utils.FirebaseUtil;
+
 /**
  * Created by Asher on 19.08.2016.
  */
-public class UserLocationReport {
+public class UserLocationReport implements IFirebaseSavable {
     private final String MY_TAG = "geog_report";
 
     public UserLocationReport(){ }
@@ -74,5 +76,11 @@ public class UserLocationReport {
     //@Exclude
     public void setKey(String key) {
         this.key = key;
+    }
+
+    @Exclude
+    @Override
+    public int getSavableClassType() {
+        return FirebaseUtil.FIREBASE_SAVABLE_TYPE_USER_LOCATION_REPORT;
     }
 }

@@ -5,6 +5,7 @@ import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -170,15 +171,34 @@ public class LoginFragment extends Fragment implements View.OnClickListener {
                     user.setUsername(nickname);
                     user.setProfileID(CommonUtil.GetAndroidID(getContext()));
                     user.setProfileTypeID(1);
-                    fdRef.push().setValue(user);
-                    SharedPreferencesUtil.SaveNicknameInSharedPreferences(getContext(), nickname);
-                    SharedPreferencesUtil.SaveProfileIDInSharedPreferences(getContext(), CommonUtil.GetAndroidID(getContext()));
-                    mListener.onLoginMade(afterLoginAction);
+                    fdRef.push().setValue(user, new DatabaseReference.CompletionListener() {
+                        @Override
+                        public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
+                            if(databaseError != null){
+                                databaseError.toException().printStackTrace();
+                                Snackbar.make(getView(), getString(R.string.error_message_failed_to_save_user_by_nickname), Snackbar.LENGTH_SHORT).show();
+                            } else {
+                                SharedPreferencesUtil.SaveNicknameInSharedPreferences(getContext(), nickname);
+                                SharedPreferencesUtil.SaveProfileIDInSharedPreferences(getContext(), CommonUtil.GetAndroidID(getContext()));
+                                mListener.onLoginMade(afterLoginAction);
+                            }
+                        }
+                    });
+
                 } else {
                     user.setUsername(nickname);
-                    fdRef.child(user.getKey()).setValue(user);
-                    SharedPreferencesUtil.SaveNicknameInSharedPreferences(getContext(), nickname);
-                    mListener.onLoginMade(afterLoginAction);
+                    fdRef.child(user.getKey()).setValue(user, new DatabaseReference.CompletionListener() {
+                        @Override
+                        public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
+                            if(databaseError != null){
+                                databaseError.toException().printStackTrace();
+                                Snackbar.make(getView(), getString(R.string.error_message_failed_to_save_user_by_nickname), Snackbar.LENGTH_SHORT).show();
+                            } else {
+                                SharedPreferencesUtil.SaveNicknameInSharedPreferences(getContext(), nickname);
+                                mListener.onLoginMade(afterLoginAction);
+                            }
+                        }
+                    });
                 }
             }
 

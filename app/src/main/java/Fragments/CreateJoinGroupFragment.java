@@ -4,6 +4,7 @@ import android.content.Context;
 import android.net.Uri;
 import android.opengl.ETC1;
 import android.os.Bundle;
+import android.support.annotation.MainThread;
 import android.support.annotation.Nullable;
 import android.support.design.widget.TextInputLayout;
 import android.support.v4.app.Fragment;
@@ -26,15 +27,20 @@ import com.google.firebase.database.Query;
 import com.google.firebase.database.Transaction;
 import com.google.firebase.database.ValueEventListener;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
+import java.util.Stack;
 
 import DataModel.Group;
+import DataModel.IFirebaseSavable;
 import DataModel.UserToGroupAssignment;
 import Utils.CommonUtil;
+import Utils.FirebaseUtil;
 import Utils.SharedPreferencesUtil;
 import Utils.UIUtil;
+import novitskyvitaly.geogroupproject.MainActivity;
 import novitskyvitaly.geogroupproject.R;
 
 public class CreateJoinGroupFragment extends Fragment implements View.OnClickListener {
@@ -117,14 +123,14 @@ public class CreateJoinGroupFragment extends Fragment implements View.OnClickLis
         btn_cancel = (Button) getView().findViewById(R.id.btn_group_cancel);
 
         switch (ActionCode){
-            case MapFragment.ACTION_CODE_FOR_CREATE_GROUP:
+            case MainActivity.ACTION_CODE_FOR_CREATE_GROUP:
                 tv_title.setText(getString(R.string.create_group_title));
                 et_group_name_id.setInputType(InputType.TYPE_CLASS_TEXT);
                 til_group_name_id.setHint(getString(R.string.select_group_name_hint));
                 til_password.setHint(getString(R.string.select_new_group_password_hint));
                 btn_ok.setText(getString(R.string.group_btn_create));
                 break;
-            case MapFragment.ACTION_CODE_FOR_JOIN_GROUP:
+            case MainActivity.ACTION_CODE_FOR_JOIN_GROUP:
                 tv_title.setText(getString(R.string.join_group_title));
                 et_group_name_id.setInputType(InputType.TYPE_CLASS_NUMBER);
                 til_group_name_id.setHint(getString(R.string.enter_existing_group_name_hint));
@@ -169,7 +175,7 @@ public class CreateJoinGroupFragment extends Fragment implements View.OnClickLis
                 }
                 final String groupName = et_group_name_id.getText().toString();
                 switch (ActionCode){
-                    case MapFragment.ACTION_CODE_FOR_CREATE_GROUP:
+                    case MainActivity.ACTION_CODE_FOR_CREATE_GROUP:
                         final DatabaseReference fdRef = FirebaseDatabase.getInstance().getReference().child(getString(R.string.firebase_child_groups));
                         Query myGroupsQuery = fdRef.orderByChild(Group.GROUP_KEY_OWNER_PROFILE_ID).equalTo(SharedPreferencesUtil.GetMyProfileID(getContext()));
                         myGroupsQuery.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -191,7 +197,7 @@ public class CreateJoinGroupFragment extends Fragment implements View.OnClickLis
                             public void onCancelled(DatabaseError databaseError) { }
                         });
                         break;
-                    case MapFragment.ACTION_CODE_FOR_JOIN_GROUP:
+                    case MainActivity.ACTION_CODE_FOR_JOIN_GROUP:
                         final DatabaseReference groupsRef = FirebaseDatabase.getInstance().getReference().child(getString(R.string.firebase_child_groups));
                         Query groupsQuery = groupsRef.orderByChild(Group.GROUP_KEY_GENERATED_ID).equalTo(groupName);
                         groupsQuery.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -251,7 +257,6 @@ public class CreateJoinGroupFragment extends Fragment implements View.OnClickLis
     }
 
     private void SaveNewGroup(){
-        DatabaseReference fdRef = FirebaseDatabase.getInstance().getReference();
         String generatedGroupID = GenerateGroupID();
 
         Group group = new Group();
@@ -264,10 +269,21 @@ public class CreateJoinGroupFragment extends Fragment implements View.OnClickLis
         utga.setGroupID(generatedGroupID);
         utga.setUserProfileID(SharedPreferencesUtil.GetMyProfileID(getContext()));
 
-        fdRef.child(getString(R.string.firebase_child_groups)).push().setValue(group);
-        fdRef.child(getString(R.string.firebase_user_to_group_assignment)).push().setValue(utga);
-        if(mListener != null)
-            mListener.onSuccessCreateJoinGroup();
+        ArrayList<IFirebaseSavable> savables = new ArrayList<>();
+        savables.add(group);
+        savables.add(utga);
+
+        FirebaseUtil.SaveDataArrayToFirebase(getContext(), savables, new Stack<DatabaseReference>(), new FirebaseUtil.IFirebaseSaveArrayOfObjectsCallback() {
+            @Override
+            public void OnSavingFinishedSuccessfully(Stack<DatabaseReference> savedObjectsReferences) {
+                if(mListener != null)
+                    mListener.onSuccessCreateJoinGroup();
+            }
+            @Override
+            public void OnSavingError(DatabaseError databaseError) {
+                databaseError.toException().printStackTrace();
+            }
+        });
     }
 
     TextWatcher nameTextWatcher = new TextWatcher() {

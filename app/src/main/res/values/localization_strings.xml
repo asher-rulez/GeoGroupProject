@@ -6,6 +6,7 @@
     <string name="select_nickname_dialog_title">Please select nickname:</string>
     <string name="validation_message_nickname_too_short">Nickname should contain at least 3 symbols</string>
     <string name="validation_message_nickname_symbols">Only letters and digits allowed</string>
+    <string name="error_message_failed_to_save_user_by_nickname">Oops, failed to save nickname, try again</string>
 
     <!-- create/join group dialog -->
     <string name="create_group_title">Create group</string>

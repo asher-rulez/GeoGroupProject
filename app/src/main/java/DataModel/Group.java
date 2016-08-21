@@ -2,10 +2,12 @@ package DataModel;
 
 import com.google.firebase.database.Exclude;
 
+import Utils.FirebaseUtil;
+
 /**
  * Created by Asher on 19.08.2016.
  */
-public class Group {
+public class Group implements IFirebaseSavable {
     private final String MY_TAG = "geog_group";
 
     public static final String GROUP_KEY_NAME = "name";
@@ -59,5 +61,11 @@ public class Group {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    @Exclude
+    @Override
+    public int getSavableClassType() {
+        return FirebaseUtil.FIREBASE_SAVABLE_TYPE_GROUP;
     }
 }

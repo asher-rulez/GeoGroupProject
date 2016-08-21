@@ -2,10 +2,12 @@ package DataModel;
 
 import com.google.firebase.database.Exclude;
 
+import Utils.FirebaseUtil;
+
 /**
  * Created by Asher on 19.08.2016.
  */
-public class User {
+public class User implements IFirebaseSavable {
     private final String MY_TAG = "geog_user";
 
     public static final String USER_KEY_USERNAME = "username";
@@ -61,5 +63,11 @@ public class User {
     //@Exclude
     public void setKey(String key) {
         this.key = key;
+    }
+
+    @Exclude
+    @Override
+    public int getSavableClassType() {
+        return FirebaseUtil.FIREBASE_SAVABLE_TYPE_USER;
     }
 }

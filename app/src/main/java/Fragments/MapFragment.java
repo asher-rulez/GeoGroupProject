@@ -38,10 +38,17 @@ import com.google.firebase.database.ValueEventListener;
 
 import DataModel.User;
 import Utils.CommonUtil;
+import Utils.FirebaseUtil;
 import Utils.SharedPreferencesUtil;
+import novitskyvitaly.geogroupproject.MainActivity;
 import novitskyvitaly.geogroupproject.R;
 
-public class MapFragment extends SupportMapFragment implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, GoogleMap.OnInfoWindowClickListener, View.OnClickListener {
+public class MapFragment extends SupportMapFragment
+        implements OnMapReadyCallback,
+        GoogleMap.OnMarkerClickListener,
+        GoogleMap.OnInfoWindowClickListener,
+        View.OnClickListener,
+        FirebaseUtil.IFirebaseUtilCallback {
 
     private static final String MY_TAG = "geog_mapFragment";
 
@@ -55,10 +62,6 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
     private OnMapFragmentInteractionListener mListener;
 
     private static final int REQUEST_CODE_ASK_LOCATION_PERMISSION = 10;
-    public static final int ACTION_CODE_FOR_JOIN_GROUP = 11;
-    public static final int ACTION_CODE_FOR_CREATE_GROUP = 12;
-    private static final int AUTH_TYPE_NICKNAME = 13;
-    private static final int AUTH_TYPE_FIREBASE = 14;
 
     FloatingActionButton fab_plus;
     FloatingActionButton fab_create_group;
@@ -225,10 +228,10 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
                 }
                 break;
             case R.id.fab_create_group:
-                CheckAuthForActionCode(ACTION_CODE_FOR_CREATE_GROUP);
+                FirebaseUtil.CheckAuthForActionCode(getContext(), MainActivity.ACTION_CODE_FOR_CREATE_GROUP, this);
                 break;
             case R.id.fab_join_group:
-                CheckAuthForActionCode(ACTION_CODE_FOR_JOIN_GROUP);
+                FirebaseUtil.CheckAuthForActionCode(getContext(), MainActivity.ACTION_CODE_FOR_JOIN_GROUP, this);
                 break;
         }
     }
@@ -247,7 +250,7 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
 
     //region Join/create group
 
-    private void JoinCreateGroupByActionCodeAndAuthType(int actionCode, int authType){
+    private void JoinCreateGroupByActionCodeAndAuthType(int actionCode){
         //Log.i(MY_TAG, "JoinCreateGroupByActionCodeAndAuthType");
         if(mListener != null)
             mListener.openCreateJoinGroupFragment(actionCode);
@@ -257,14 +260,12 @@ public class MapFragment extends SupportMapFragment implements OnMapReadyCallbac
 
     //region Firebase
 
-    private void CheckAuthForActionCode(int actionCode){
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if(user == null){
-            String username = SharedPreferencesUtil.GetMyNickname(getContext());
-            if(username.equals("")){
-                SwitchToLoginFragmentForActionCode(actionCode);
-            } else JoinCreateGroupByActionCodeAndAuthType(actionCode, AUTH_TYPE_NICKNAME);
-        } else JoinCreateGroupByActionCodeAndAuthType(actionCode, AUTH_TYPE_FIREBASE);
+
+    @Override
+    public void OnCheckAuthorizationCompleted(int actionCode, boolean isAuthorized, String nickname){
+        if(isAuthorized)
+            JoinCreateGroupByActionCodeAndAuthType(actionCode);
+        else SwitchToLoginFragmentForActionCode(actionCode);
     }
 
 //    private boolean CheckIfAuthorizedToFirebase(){
