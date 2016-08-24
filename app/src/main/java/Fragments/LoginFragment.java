@@ -6,6 +6,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
+import android.support.design.widget.TextInputLayout;
 import android.support.v4.app.Fragment;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -23,6 +24,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.iid.FirebaseInstanceId;
 
 import DataModel.User;
 import Utils.CommonUtil;
@@ -106,7 +108,7 @@ public class LoginFragment extends Fragment implements View.OnClickListener {
         nicknameDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         nicknameDialog.setContentView(R.layout.select_nickname_dialog);
         final EditText et_nickname = (EditText)nicknameDialog.findViewById(R.id.et_select_nickname);
-        final TextView tv_nickname_validation = (TextView)nicknameDialog.findViewById(R.id.tv_select_nickname_validation);
+        final TextInputLayout til_nickname = (TextInputLayout) nicknameDialog.findViewById(R.id.til_nickname);
         final Button btn_nickname_ok = (Button)nicknameDialog.findViewById(R.id.btn_select_nickname_ok);
         final Button btn_nickname_cancel = (Button)nicknameDialog.findViewById(R.id.btn_select_nickname_cancel);
 
@@ -118,7 +120,7 @@ public class LoginFragment extends Fragment implements View.OnClickListener {
             @Override
             public void afterTextChanged(Editable editable) {
                 UIUtil.RemoveValidationFromEditText(ctx, et_nickname);
-                tv_nickname_validation.setText(editable.length() > 2 ? "" : getString(R.string.validation_message_nickname_too_short));
+                til_nickname.setHint(editable.length() > 2 ? "" : getString(R.string.validation_message_nickname_too_short));
                 btn_nickname_ok.setEnabled(editable.length() > 2);
             }
         });
@@ -129,7 +131,7 @@ public class LoginFragment extends Fragment implements View.OnClickListener {
             public void onClick(View view) {
                 if(!et_nickname.getText().toString().matches(getString(R.string.regex_digits_letters_more_than_3))){
                     UIUtil.SetEditTextIsValid(ctx, et_nickname, false);
-                    tv_nickname_validation.setText(getString(R.string.validation_message_nickname_symbols));
+                    til_nickname.setHint(getString(R.string.validation_message_nickname_symbols));
                     return;
                 }
                 UIUtil.SetEditTextIsValid(ctx, et_nickname, true);
@@ -171,6 +173,7 @@ public class LoginFragment extends Fragment implements View.OnClickListener {
                     user.setUsername(nickname);
                     user.setProfileID(CommonUtil.GetAndroidID(getContext()));
                     user.setProfileTypeID(1);
+                    user.setFcmToken(FirebaseInstanceId.getInstance().getToken());
                     fdRef.push().setValue(user, new DatabaseReference.CompletionListener() {
                         @Override
                         public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {

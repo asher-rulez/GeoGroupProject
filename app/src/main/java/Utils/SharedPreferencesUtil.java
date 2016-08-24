@@ -59,6 +59,8 @@ public class SharedPreferencesUtil {
         SharedPreferences sp = ctx.getSharedPreferences(ctx.getString(R.string.last_location_token), Context.MODE_PRIVATE);
         float lat = sp.getFloat(ctx.getString(R.string.last_location_latitude), -1);
         float lng = sp.getFloat(ctx.getString(R.string.last_location_longitude), -1);
+        if(lat == -1 && lng == -1)
+            return null;
         return new LatLng((double)lat, (double)lng);
     }
 
@@ -126,6 +128,18 @@ public class SharedPreferencesUtil {
             editor.commit();
         }
         return result;
+    }
+
+    public static void SaveFCMTokenInSharedPreferences(Context ctx, String nickname){
+        SharedPreferences sp = ctx.getSharedPreferences(ctx.getString(R.string.fcm_token_token), Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sp.edit();
+        editor.putString(ctx.getString(R.string.fcm_token_key), nickname);
+        editor.commit();
+    }
+
+    public static String GetFCMTokenFromSharedPreferences(Context ctx){
+        SharedPreferences sp = ctx.getSharedPreferences(ctx.getString(R.string.fcm_token_token), Context.MODE_PRIVATE);
+        return sp.getString(ctx.getString(R.string.fcm_token_key), "");
     }
 
 }

@@ -28,4 +28,8 @@
     <!-- common -->
     <string name="common_ok">Ok</string>
     <string name="common_cancel">Cancel</string>
+
+    <!-- Loading fragment -->
+    <string name="loading_fragment_message">Please wait, loading application..</string>
+
 </resources>

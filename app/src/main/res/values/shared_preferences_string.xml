@@ -46,4 +46,9 @@
     <string name="should_stop_loc_service_token">should_stop_loc_service_token</string>
     <string name="should_stop_loc_service_key">should_stop_loc_service_key</string>
 
+    <!-- FCM Token -->
+
+    <string name="fcm_token_token">fcm_token_token</string>
+    <string name="fcm_token_key">fcm_token_key</string>
+
 </resources>

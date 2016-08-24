@@ -4,8 +4,12 @@ import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
@@ -48,7 +52,7 @@ public class MapFragment extends SupportMapFragment
         GoogleMap.OnMarkerClickListener,
         GoogleMap.OnInfoWindowClickListener,
         View.OnClickListener,
-        FirebaseUtil.IFirebaseUtilCallback {
+        FirebaseUtil.IFirebaseCheckAuthCallback {
 
     private static final String MY_TAG = "geog_mapFragment";
 
@@ -56,7 +60,7 @@ public class MapFragment extends SupportMapFragment
 
     SupportMapFragment mapFragment;
     GoogleMap googleMap;
-    Location lastLocation;
+    LatLng lastLocation;
 
     private Context appContext;
     private OnMapFragmentInteractionListener mListener;
@@ -83,14 +87,14 @@ public class MapFragment extends SupportMapFragment
                              Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
 
-        if(view != null){
-            ViewGroup parent = (ViewGroup)view.getParent();
-            if(parent != null)
+        if (view != null) {
+            ViewGroup parent = (ViewGroup) view.getParent();
+            if (parent != null)
                 parent.removeView(view);
         }
         try {
             view = inflater.inflate(R.layout.fragment_map, container, false);
-        } catch (InflateException e){
+        } catch (InflateException e) {
             e.printStackTrace();
         }
         return view;
@@ -138,12 +142,12 @@ public class MapFragment extends SupportMapFragment
 
     //region Controls init
 
-    private void InitFABs(){
-        fab_plus = (FloatingActionButton)getView().findViewById(R.id.fab_plus);
+    private void InitFABs() {
+        fab_plus = (FloatingActionButton) getView().findViewById(R.id.fab_plus);
         fab_plus.setOnClickListener(this);
-        fab_create_group = (FloatingActionButton)getView().findViewById(R.id.fab_create_group);
+        fab_create_group = (FloatingActionButton) getView().findViewById(R.id.fab_create_group);
         fab_create_group.setOnClickListener(this);
-        fab_join_group = (FloatingActionButton)getView().findViewById(R.id.fab_join_group);
+        fab_join_group = (FloatingActionButton) getView().findViewById(R.id.fab_join_group);
         fab_join_group.setOnClickListener(this);
         fab_appear_anim = AnimationUtils.loadAnimation(getContext(), R.anim.fab_appear);
         fab_collapse_anim = AnimationUtils.loadAnimation(getContext(), R.anim.fab_collapse);
@@ -182,23 +186,116 @@ public class MapFragment extends SupportMapFragment
             googleMap.setOnMarkerClickListener(this);
             googleMap.setOnInfoWindowClickListener(this);
             googleMap.getUiSettings().setMyLocationButtonEnabled(false);
-            if(lastLocation != null)
-                CenterMapOnPosition(lastLocation);
+            TryGetLocationAndCenterMap();
         }
+    }
 
+    private void TryGetLocationAndCenterMap() {
+        new AsyncTask<Void, Void, Void>() {
+            @Override
+            protected Void doInBackground(Void... voids) {
+                final LocationManager locationManager = (LocationManager) getContext().getSystemService(Context.LOCATION_SERVICE);
+                final Location location = null;
+                if (locationManager == null) {
+                    Log.e(MY_TAG, "cant get location manager!");
+                    return null;
+                }
+                if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                        && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    return null;
+                }
+                locationManager.requestSingleUpdate(LocationManager.GPS_PROVIDER, new LocationListener() {
+                    @Override
+                    public void onLocationChanged(Location location) {
+                        if (location != null)
+                            SetLastLocation(location);
+                    }
+
+                    @Override
+                    public void onProviderDisabled(String s) {
+                        if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                                && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                            return;
+                        }
+                        locationManager.requestSingleUpdate(LocationManager.NETWORK_PROVIDER, new LocationListener() {
+                            @Override
+                            public void onLocationChanged(Location location) {
+                                SetLastLocation(location);
+                            }
+
+                            @Override
+                            public void onStatusChanged(String s, int i, Bundle bundle) {
+                            }
+
+                            @Override
+                            public void onProviderEnabled(String s) {
+                            }
+
+                            @Override
+                            public void onProviderDisabled(String s) {
+                                if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                                        && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                                    return;
+                                }
+                                Location loc = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                                if (loc != null) {
+                                    SetLastLocation(loc);
+                                    return;
+                                }
+                                loc = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                                if (loc != null)
+                                    SetLastLocation(loc);
+                            }
+                        }, Looper.getMainLooper());
+                    }
+
+                    @Override
+                    public void onStatusChanged(String s, int i, Bundle bundle) {
+                    }
+
+                    @Override
+                    public void onProviderEnabled(String s) {
+                    }
+
+                }, Looper.getMainLooper());
+                return null;
+            }
+
+            @Override
+            protected void onPostExecute(Void aVoid) {
+                if (lastLocation == null) {
+                    LatLng latLng = SharedPreferencesUtil.GetLastLocationLatLng(getContext());
+                    if (latLng != null)
+                        SetLastLocation(latLng);
+                }
+                CenterMapOnPosition(lastLocation);
+            }
+        }.execute();
+    }
+
+    private void SetLastLocation(LatLng latLng) {
+        lastLocation = latLng;
+    }
+
+    private void SetLastLocation(Location location) {
+        lastLocation = location == null ? null : new LatLng(location.getLatitude(), location.getLongitude());
     }
 
     public void CenterMapOnPosition(Location location) {
-        lastLocation = location;
-        if(location != null)
-            AnimateCameraFocusOnLatLng(location, null);
+        if (location != null)
+            AnimateCameraFocusOnLatLng(location.getLatitude(), location.getLongitude(), null);
     }
 
-    private void AnimateCameraFocusOnLatLng(Location location, @Nullable Integer zoomLevel) {
+    public void CenterMapOnPosition(LatLng latLng) {
+        if (latLng != null)
+            AnimateCameraFocusOnLatLng(latLng.latitude, latLng.longitude, null);
+    }
+
+    private void AnimateCameraFocusOnLatLng(double lat, double lng, @Nullable Integer zoomLevel) {
         if (googleMap == null) return;
         CameraUpdate cameraUpdate
                 = CameraUpdateFactory.newLatLngZoom(
-                new LatLng(location.getLatitude(), location.getLongitude()),
+                new LatLng(lat, lng),
                 zoomLevel == null ? 15 : zoomLevel);
         googleMap.animateCamera(cameraUpdate);
     }
@@ -209,16 +306,16 @@ public class MapFragment extends SupportMapFragment
 
     @Override
     public void onClick(View view) {
-        switch (view.getId()){
+        switch (view.getId()) {
             case R.id.fab_plus:
-                if(isExpanded){
+                if (isExpanded) {
                     fab_join_group.startAnimation(fab_collapse_anim);
                     fab_create_group.startAnimation(fab_collapse_anim);
                     fab_plus.startAnimation(fab_x_to_plus_rotate_anim);
                     fab_join_group.setClickable(false);
                     fab_create_group.setClickable(false);
                     isExpanded = false;
-                }else {
+                } else {
                     fab_join_group.startAnimation(fab_appear_anim);
                     fab_create_group.startAnimation(fab_appear_anim);
                     fab_plus.startAnimation(fab_plus_to_x_rotate_anim);
@@ -250,23 +347,15 @@ public class MapFragment extends SupportMapFragment
 
     //region Join/create group
 
-    private void JoinCreateGroupByActionCodeAndAuthType(int actionCode){
+    private void JoinCreateGroupByActionCodeAndAuthType(int actionCode) {
         //Log.i(MY_TAG, "JoinCreateGroupByActionCodeAndAuthType");
-        if(mListener != null)
+        if (mListener != null)
             mListener.openCreateJoinGroupFragment(actionCode);
     }
 
     //endregion
 
     //region Firebase
-
-
-    @Override
-    public void OnCheckAuthorizationCompleted(int actionCode, boolean isAuthorized, String nickname){
-        if(isAuthorized)
-            JoinCreateGroupByActionCodeAndAuthType(actionCode);
-        else SwitchToLoginFragmentForActionCode(actionCode);
-    }
 
 //    private boolean CheckIfAuthorizedToFirebase(){
 //        FirebaseAuth firebaseAuthorization = FirebaseAuth.getInstance();
@@ -282,14 +371,24 @@ public class MapFragment extends SupportMapFragment
 
     //region Interaction with parent activity
 
-    private void SwitchToLoginFragmentForActionCode(int actionCode){
+    private void SwitchToLoginFragmentForActionCode(int actionCode) {
         Log.i(MY_TAG, "SwitchToLoginFragmentForActionCode");
         mListener.showLoginFragmentForAction(actionCode);
     }
 
+    @Override
+    public void onCheckAuthorizationCompleted(int actionCode, boolean isAuthorized, String nickName) {
+        if (isAuthorized)
+            JoinCreateGroupByActionCodeAndAuthType(actionCode);
+        else SwitchToLoginFragmentForActionCode(actionCode);
+    }
+
     public interface OnMapFragmentInteractionListener {
         void showLoginFragmentForAction(int actionCode);
+
         void openCreateJoinGroupFragment(int actionCode);
+
+        void onMapFinishedLoading();
     }
 
     //endregion

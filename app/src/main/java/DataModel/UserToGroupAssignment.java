@@ -7,17 +7,21 @@ import Utils.FirebaseUtil;
 /**
  * Created by Asher on 19.08.2016.
  */
-public class UserToGroupAssignment implements IFirebaseSavable {
+public class UserToGroupAssignment implements IFirebaseSavable, Comparable<UserToGroupAssignment> {
     private final String MY_TAG = "geog_user_to_group";
 
     public final static String UTGA_KEY_GROUP_ID = "groupID";
     public final static String UTGA_KEY_USER_PROFILE_ID = "userProfileID";
+    public final static String UTGA_KEY_LAST_LATITUDE = "lastReportedLatitude";
+    public final static String UTGA_KEY_LAST_LONGITUDE = "lastReportedLongitude";
 
     public UserToGroupAssignment(){}
 
     private String key;
     private String groupID;
     private String userProfileID;
+    private Double lastReportedLatitude;
+    private Double lastReportedLongitude;
 
     public String getGroupID() {
         return groupID;
@@ -35,6 +39,22 @@ public class UserToGroupAssignment implements IFirebaseSavable {
         this.userProfileID = userProfileID;
     }
 
+    public Double getLastReportedLatitude() {
+        return lastReportedLatitude;
+    }
+
+    public void setLastReportedLatitude(Double lastReportedLatitude) {
+        this.lastReportedLatitude = lastReportedLatitude;
+    }
+
+    public Double getLastReportedLongitude() {
+        return lastReportedLongitude;
+    }
+
+    public void setLastReportedLongitude(Double lastReportedLongitude) {
+        this.lastReportedLongitude = lastReportedLongitude;
+    }
+
     @Exclude
     public String getKey() {
         return key;
@@ -49,5 +69,12 @@ public class UserToGroupAssignment implements IFirebaseSavable {
     @Override
     public int getSavableClassType() {
         return FirebaseUtil.FIREBASE_SAVABLE_TYPE_USER_TO_GROUP_ASSIGNMENT;
+    }
+
+    @Override
+    public int compareTo(UserToGroupAssignment userToGroupAssignment) {
+        if(this.getLastReportedLatitude() != userToGroupAssignment.getLastReportedLatitude()
+                || this.getLastReportedLongitude() != userToGroupAssignment.getLastReportedLongitude()) return 1;
+        return 0;
     }
 }

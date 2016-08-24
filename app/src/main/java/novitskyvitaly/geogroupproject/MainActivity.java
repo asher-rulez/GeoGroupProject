@@ -10,6 +10,7 @@ import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
@@ -30,13 +31,30 @@ import android.view.MenuItem;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.GooglePlayServicesUtil;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
+import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.iid.FirebaseInstanceId;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+import DataModel.Group;
+import DataModel.GroupCommonEvent;
+import DataModel.User;
+import DataModel.UserStatusUpdate;
+import DataModel.UserToGroupAssignment;
 import Fragments.CreateJoinGroupFragment;
+import Fragments.LoadingFragment;
 import Fragments.LoginFragment;
 import Fragments.MapFragment;
 import Utils.CommonUtil;
+import Utils.FirebaseUtil;
 import Utils.GeoGroupBroadcastReceiver;
 import Utils.SharedPreferencesUtil;
 
@@ -45,13 +63,15 @@ public class MainActivity extends AppCompatActivity
         MapFragment.OnMapFragmentInteractionListener,
         GeoGroupBroadcastReceiver.IBroadcastReceiverCallback,
         LoginFragment.OnLoginFragmentInteractionListener,
-        CreateJoinGroupFragment.OnCreateJoinGroupInteractionListener {
+        CreateJoinGroupFragment.OnCreateJoinGroupInteractionListener, FirebaseUtil.IFirebaseCheckAuthCallback, FirebaseUtil.IFirebaseInitListenersCallback {
 
     private final String MY_TAG = "geog_main_act";
     private final static int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
 
     public static final int ACTION_CODE_FOR_JOIN_GROUP = 11;
     public static final int ACTION_CODE_FOR_CREATE_GROUP = 12;
+    public static final int ACTION_CODE_INITIAL_GROUPS_CHECK = 13;
+    public static final int ACTION_CODE_START_SCREEN_ON_STARTUP = 14;
     //public static final int AUTH_TYPE_NICKNAME = 13;
     //public static final int AUTH_TYPE_FIREBASE = 14;
 
@@ -63,17 +83,19 @@ public class MainActivity extends AppCompatActivity
     private final int FRAGMENT_ID_MAP = 1;
     private final int FRAGMENT_ID_LOGIN = 2;
     private final int FRAGMENT_JOINCREATE = 3;
+    private final int FRAGMENT_LOADING = 4;
     int currentFragmentID;
     MapFragment mapFragment;
     LoginFragment loginFragment;
     CreateJoinGroupFragment createJoinFragment;
+    LoadingFragment loadingFragment;
 
     boolean isInternetAvailable = false;
     boolean isGoogleServiceAvailable = false;
 
     GeoGroupBroadcastReceiver broadcastReceiver;
 
-    private DatabaseReference geoGroupFirebaseRef;
+    //private DatabaseReference geoGroupFirebaseRef;
 
     //region Activity overrides
 
@@ -85,11 +107,42 @@ public class MainActivity extends AppCompatActivity
         InitToolbar();
         InitDrawerSideMenu();
 
-        if (savedInstanceState == null) {
-            SwitchToMapFragment();
-        }
+        SwitchToLoadingFragment();
+//        if (savedInstanceState == null) {
+//            SwitchToMapFragment();
+//        }
 
-        geoGroupFirebaseRef = FirebaseDatabase.getInstance().getReference();
+        final FirebaseUtil.IFirebaseCheckAuthCallback authListener = this;
+        //geoGroupFirebaseRef = FirebaseDatabase.getInstance().getReference();
+        if (SharedPreferencesUtil.GetFCMTokenFromSharedPreferences(this).equals(""))
+            new AsyncTask<Void, Void, Void>() {
+                @Override
+                protected Void doInBackground(Void... voids) {
+                    String token = FirebaseInstanceId.getInstance().getToken();
+                    if (token != null) {
+                        Log.i(MY_TAG, "got token: " + token);
+                        SharedPreferencesUtil.SaveFCMTokenInSharedPreferences(getApplicationContext(), token);
+                    }
+                    return null;
+                }
+
+                @Override
+                protected void onPostExecute(Void aVoid) {
+                    super.onPostExecute(aVoid);
+                    CheckAuthorization(authListener);
+                }
+            }.execute();
+        else CheckAuthorization(authListener);
+    }
+
+    private void CheckAuthorization(final FirebaseUtil.IFirebaseCheckAuthCallback callbackListener) {
+        new AsyncTask<Void, Void, Void>() {
+            @Override
+            protected Void doInBackground(Void... voids) {
+                FirebaseUtil.CheckAuthForActionCode(getApplicationContext(), ACTION_CODE_START_SCREEN_ON_STARTUP, callbackListener);
+                return null;
+            }
+        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     @Override
@@ -105,19 +158,14 @@ public class MainActivity extends AppCompatActivity
         NotificationManager notificationManager
                 = (NotificationManager) getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.cancelAll();
-        //if(!SharedPreferencesUtil.GetIsLocationUpdateServiceRunning(this)){
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                || ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            CommonUtil.RequestLocationPermissions(this, 0);
-        } else LocationListenerService.startLocationListenerService(this);
-        //}
+
         if (broadcastReceiver == null) {
             broadcastReceiver = new GeoGroupBroadcastReceiver(this);
             IntentFilter filter = new IntentFilter(GeoGroupBroadcastReceiver.BROADCAST_REC_INTENT_FILTER);
-            try{
+            try {
                 Log.i(MY_TAG, "trying to register broadcastReceiver");
                 registerReceiver(broadcastReceiver, filter);
-            }catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -159,7 +207,7 @@ public class MainActivity extends AppCompatActivity
                 unregisterReceiver(broadcastReceiver);
                 broadcastReceiver = null;
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
         SharedPreferencesUtil.SetShouldStopService(this, true);
@@ -171,13 +219,13 @@ public class MainActivity extends AppCompatActivity
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
-            if(currentFragmentID == FRAGMENT_ID_MAP) {
+            if (currentFragmentID == FRAGMENT_ID_MAP) {
                 Intent intent = new Intent(Intent.ACTION_MAIN);
                 intent.addCategory(Intent.CATEGORY_HOME);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(intent);
             } else {
-                if(currentFragmentID == FRAGMENT_JOINCREATE && createJoinFragment != null)
+                if (currentFragmentID == FRAGMENT_JOINCREATE && createJoinFragment != null)
                     createJoinFragment.ClearFields();
                 super.onBackPressed();
             }
@@ -219,11 +267,9 @@ public class MainActivity extends AppCompatActivity
     //region dialogs
 
 
-
     //endregion
 
     //region firebase methods
-
 
 
     //endregion
@@ -288,21 +334,22 @@ public class MainActivity extends AppCompatActivity
 
     //region fragments and callbacks
 
-    private void SwitchToMapFragment(){
+    private void SwitchToMapFragment() {
         if (mapFragment == null)
             mapFragment = new MapFragment();
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.fl_fragments_container, mapFragment);
-        for(int i = 0; i < getSupportFragmentManager().getBackStackEntryCount(); i++){
+        for (int i = 0; i < getSupportFragmentManager().getBackStackEntryCount(); i++) {
             getSupportFragmentManager().popBackStackImmediate();
         }
         transaction.commit();
         currentFragmentID = FRAGMENT_ID_MAP;
     }
 
-    private void SwitchToLoginFragment(){
-        if(loginFragment == null)
+    private void SwitchToLoginFragment(int actionCode) {
+        if (loginFragment == null)
             loginFragment = new LoginFragment();
+        loginFragment.SetAfterLoginAction(actionCode);
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.fl_fragments_container, loginFragment);
         transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
@@ -311,8 +358,8 @@ public class MainActivity extends AppCompatActivity
         currentFragmentID = FRAGMENT_ID_LOGIN;
     }
 
-    private void SwitchToCreateJoinFragment(int actionCode){
-        if(createJoinFragment == null)
+    private void SwitchToCreateJoinFragment(int actionCode) {
+        if (createJoinFragment == null)
             createJoinFragment = new CreateJoinGroupFragment();
         createJoinFragment.SetAction(actionCode);
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
@@ -322,6 +369,16 @@ public class MainActivity extends AppCompatActivity
         transaction.commit();
         currentFragmentID = FRAGMENT_JOINCREATE;
     }
+
+    private void SwitchToLoadingFragment() {
+        if (loadingFragment == null)
+            loadingFragment = new LoadingFragment();
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.fl_fragments_container, loadingFragment);
+        transaction.commit();
+        currentFragmentID = FRAGMENT_LOADING;
+    }
+
 
     @Override
     public void onLoginFragmentInteraction(Uri uri) {
@@ -336,13 +393,17 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void showLoginFragmentForAction(int actionCode) {
-        SwitchToLoginFragment();
-        loginFragment.SetAfterLoginAction(actionCode);
+        SwitchToLoginFragment(actionCode);
     }
 
     @Override
     public void openCreateJoinGroupFragment(int actionCode) {
         SwitchToCreateJoinFragment(actionCode);
+    }
+
+    @Override
+    public void onMapFinishedLoading() {
+        FirebaseUtil.CheckAuthForActionCode(this, ACTION_CODE_INITIAL_GROUPS_CHECK, this);
     }
 
     @Override
@@ -354,6 +415,202 @@ public class MainActivity extends AppCompatActivity
     public void onSuccessCreateJoinGroup() {
         SwitchToMapFragment();
         //todo: start listening to group
+    }
+
+    //endregion
+
+    //region location report service
+
+    private void StartLocationReportService() {
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                || ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            CommonUtil.RequestLocationPermissions(this, 0);
+        } else LocationListenerService.startLocationListenerService(this);
+    }
+
+    @Override
+    public void onCheckAuthorizationCompleted(int actionCode, boolean isAuthorized, String nickName) {
+        switch (actionCode) {
+            case ACTION_CODE_START_SCREEN_ON_STARTUP:
+                if (isAuthorized) {
+                    SwitchToMapFragment();
+                    new AsyncTask<Void, Void, Void>() {
+                        @Override
+                        protected Void doInBackground(Void... voids) {
+                            StartListeningToMyGroupsQuery();
+                            return null;
+                        }
+                    }.execute();
+                } else {
+                    SwitchToLoginFragment(actionCode);
+                }
+                break;
+        }
+    }
+
+    private void StartListeningToFirebaseUpdates() {
+
+    }
+
+    private void StartListeningToMyGroupsQuery() {
+        Query myGroupsQuery = FirebaseUtil.GetMyGroupsQuery(this);
+        if (myGroupsChildEventListener == null)
+            myGroupsChildEventListener = new ChildEventListener() {
+                @Override
+                public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                    UserToGroupAssignment utgaGroupAdded = dataSnapshot.getValue(UserToGroupAssignment.class);
+                    if (utgaGroupAdded != null) {
+                        Log.i(MY_TAG, "you were assigned to group:" + utgaGroupAdded.getGroupID());
+                        HandleGroupAdded(utgaGroupAdded.getGroupID());
+                    }
+                }
+
+                @Override
+                public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+                    Log.e(MY_TAG, "unexpected firebase event: onChildChanged for myGroupsListener");
+                }
+
+                @Override
+                public void onChildRemoved(DataSnapshot dataSnapshot) {
+                    UserToGroupAssignment utgaGroupAssignmentRemoved = dataSnapshot.getValue(UserToGroupAssignment.class);
+                    if (utgaGroupAssignmentRemoved != null)
+                        HandleGroupRemoved(utgaGroupAssignmentRemoved.getGroupID());
+                }
+
+                @Override
+                public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                    databaseError.toException().printStackTrace();
+                }
+            };
+        myGroupsQuery.addChildEventListener(myGroupsChildEventListener);
+    }
+
+    private void HandleGroupAdded(String groupKey) {
+        FirebaseUtil.GetSingleGroupReferenceByGroupKey(this, groupKey, this);
+    }
+
+    private void HandleGroupRemoved(String groupKey) {
+        // todo: user was removed from group. this may occur as result of group removing or user was removed by admin. Implement both
+    }
+
+    private ChildEventListener myGroupsChildEventListener;
+    private ValueEventListener singleGroupValueEventListener;
+    private ArrayList<Group> myGroups;
+    private ChildEventListener assignedUsersChildEventListener;
+    private ValueEventListener singleUTGAValueEventListener;
+    private ArrayList<DatabaseReference> userAssignmentReferences;
+    private ArrayList<UserToGroupAssignment> userAssignments;
+    private ArrayList<User> usersAssignedToMyGroups;
+    private ArrayList<UserStatusUpdate> usersStatusUpdates;
+    private ArrayList<GroupCommonEvent> groupCommonEvents;
+
+    private void NotifyMyGroupsArrayChanged() {
+        //todo: if myGroups will be used in recyclerView - this will be the place for notification
+    }
+
+    private void NotifyUTGAChanged(UserToGroupAssignment utga) {
+        //todo: updating marker
+    }
+
+    @Override
+    public void OnSingleGroupResolved(final Group group) {
+        if (myGroups == null)
+            myGroups = new ArrayList<>();
+        myGroups.add(group);
+        if (singleGroupValueEventListener == null)
+            singleGroupValueEventListener = new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    Log.i(MY_TAG, "group was updated");
+//                    if(!dataSnapshot.hasChildren()) return;
+//                    Group g = null;
+//                    for(DataSnapshot ds : dataSnapshot.getChildren())
+//                        g = ds.getValue(Group.class);
+                    Group g = dataSnapshot.getValue(Group.class);
+                    for (Group myGroup : myGroups) {
+                        if (myGroup.getGeneratedID().equals(g.getGeneratedID())) {
+                            if (myGroup.compareTo(g) != 0) {
+                                myGroup.setName(g.getName());
+                                myGroup.setPassword(g.getPassword());
+                                NotifyMyGroupsArrayChanged();
+                            }
+                            break;
+                        }
+                    }
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                    databaseError.toException().printStackTrace();
+                }
+            };
+        group.getSelfReference().addValueEventListener(singleGroupValueEventListener);
+        if (singleUTGAValueEventListener == null)
+            singleUTGAValueEventListener = new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    UserToGroupAssignment utgaUpdated = dataSnapshot.getValue(UserToGroupAssignment.class);
+                    if (utgaUpdated.getUserProfileID().equals(SharedPreferencesUtil.GetMyProfileID(getApplicationContext()))
+                            || userAssignments == null)
+                        return;
+                    for (UserToGroupAssignment utgaTmp : userAssignments) {
+                        if (utgaTmp.getUserProfileID().equals(utgaUpdated.getUserProfileID())
+                                && utgaTmp.getGroupID().equals(utgaUpdated.getGroupID())) {
+                            if (utgaTmp.compareTo(utgaUpdated) != 0) {
+                                utgaTmp.setLastReportedLatitude(utgaUpdated.getLastReportedLatitude());
+                                utgaTmp.setLastReportedLongitude(utgaUpdated.getLastReportedLongitude());
+                                NotifyUTGAChanged(utgaTmp);
+                            }
+                            break;
+                        }
+                    }
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                    databaseError.toException().printStackTrace();
+                }
+            };
+        if (assignedUsersChildEventListener == null)
+            assignedUsersChildEventListener = new ChildEventListener() {
+                @Override
+                public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                    UserToGroupAssignment utgaNew = dataSnapshot.getValue(UserToGroupAssignment.class);
+                    if (utgaNew.getUserProfileID().equals(SharedPreferencesUtil.GetMyProfileID(getApplicationContext())))
+                        return;
+                    if (userAssignments == null)
+                        userAssignments = new ArrayList<>();
+                    userAssignments.add(utgaNew);
+                    NotifyUTGAChanged(utgaNew);
+                    if (userAssignmentReferences == null)
+                        userAssignmentReferences = new ArrayList<>();
+                    DatabaseReference utgaRef = dataSnapshot.getRef();
+                    utgaRef.addValueEventListener(singleUTGAValueEventListener);
+                    userAssignmentReferences.add(utgaRef);
+                }
+
+                @Override
+                public void onChildRemoved(DataSnapshot dataSnapshot) {
+                    //todo: remove user, utga, remove listener from dRef and remove dRef
+                }
+
+                @Override
+                public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+                }
+
+                @Override
+                public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                    databaseError.toException().printStackTrace();
+                }
+            };
     }
 
     //endregion

@@ -1,6 +1,7 @@
 package Utils;
 
 import android.content.Context;
+import android.util.Log;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -12,6 +13,8 @@ import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Stack;
 
 import DataModel.Group;
@@ -33,7 +36,7 @@ public class FirebaseUtil {
     public static final int FIREBASE_SAVABLE_TYPE_USER_STATUS_UPDATE = 5;
     public static final int FIREBASE_SAVABLE_TYPE_USER_TO_GROUP_ASSIGNMENT = 6;
 
-    public static void CheckAuthForActionCode(final Context ctx, final int actionCode, final IFirebaseUtilCallback callbackListener){
+    public static void CheckAuthForActionCode(final Context ctx, final int actionCode, final IFirebaseCheckAuthCallback callbackListener){
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if(user == null) {
             Query currentUserQuery
@@ -48,10 +51,10 @@ public class FirebaseUtil {
                             if (user1.getProfileID().equals(CommonUtil.GetAndroidID(ctx))) {
                                 String nickname = user1.getUsername();
                                 SharedPreferencesUtil.SaveNicknameInSharedPreferences(ctx, nickname);
-                                callbackListener.OnCheckAuthorizationCompleted(actionCode, true, nickname);
+                                callbackListener.onCheckAuthorizationCompleted(actionCode, true, nickname);
                             }
                         }
-                    } else callbackListener.OnCheckAuthorizationCompleted(actionCode, false, null);
+                    } else callbackListener.onCheckAuthorizationCompleted(actionCode, false, null);
                 }
 
                 @Override
@@ -118,12 +121,116 @@ public class FirebaseUtil {
         callbackListener.OnSavingError(error);
     }
 
-    public interface IFirebaseUtilCallback{
-        void OnCheckAuthorizationCompleted(int actionCode, boolean isAuthorized, String nickName);
+    public static void GetActiveGroups(Context ctx, final IFirebaseGetDataCheckCallback callbackListener){
+        //todo: here should be method that gets current User profileID from SP
+        String profileID = CommonUtil.GetAndroidID(ctx);
+
+        Query qMyUTGAs
+                = FirebaseDatabase.getInstance().getReference()
+                .child(ctx.getString(R.string.firebase_user_to_group_assignment))
+                .orderByChild(UserToGroupAssignment.UTGA_KEY_USER_PROFILE_ID)
+                .equalTo(profileID);
+        qMyUTGAs.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if(!dataSnapshot.hasChildren()){
+                    Log.i(MY_TAG, "no active groups found");
+                    callbackListener.onGetActiveGroupsCompleted(new ArrayList<Group>());
+                    return;
+                }
+                Set<String> groupKeys = new HashSet<String>();
+                for(DataSnapshot dsUTGA : dataSnapshot.getChildren()){
+                    UserToGroupAssignment utga = dsUTGA.getValue(UserToGroupAssignment.class);
+                    if(utga != null)
+                        groupKeys.add(utga.getGroupID());
+                }
+                if(groupKeys.size() == 0){
+                    Log.i(MY_TAG, "resolving group keys from fbdb went wrong");
+                    callbackListener.onGetActiveGroupsCompleted(new ArrayList<Group>());
+                    return;
+                }
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+    }
+
+    private void GetUserNamesAndReferencesByGroupKeys(Context ctx, Set<String> groupKeys, ArrayList<Group> groupsResult, IFirebaseGetDataCheckCallback callbackListener){
+        if(groupKeys == null || groupKeys.size() == 0)
+            callbackListener.onGetActiveGroupsCompleted(groupsResult);
+        //Query utgaByGroupKeyQuery = FirebaseDatabase.getInstance().getReference().child(ctx.getString(R.string.firebase_user_to_group_assignment)).orderByChild(UserToGroupAssignment.UTGA_KEY_GROUP_ID).
+    }
+
+    public static Query GetMyGroupsQuery(Context ctx){
+        return FirebaseDatabase.getInstance().getReference()
+                .child(ctx.getString(R.string.firebase_user_to_group_assignment))
+                .orderByChild(UserToGroupAssignment.UTGA_KEY_USER_PROFILE_ID)
+                .equalTo(SharedPreferencesUtil.GetMyProfileID(ctx));
+    }
+
+    public static void GetSingleGroupReferenceByGroupKey(final Context ctx, final String groupKey, final IFirebaseInitListenersCallback callbackListener){
+        Query singleGroupQuery = FirebaseDatabase.getInstance().getReference()
+                .child(ctx.getString(R.string.firebase_child_groups))
+                .orderByChild(Group.GROUP_KEY_GENERATED_ID)
+                .equalTo(groupKey);
+        singleGroupQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if(dataSnapshot.hasChildren()){
+                    int i = 0;
+                    for(DataSnapshot ds : dataSnapshot.getChildren()){
+                        if(i > 0){
+                            Log.e(MY_TAG, "unexpected amount of groups got by one key!");
+                            return;
+                        }
+                        Group group = ds.getValue(Group.class);
+                        group.setKey(ds.getKey());
+                        group.setSelfReference(FirebaseDatabase.getInstance().getReference()
+                                .child(ctx.getString(R.string.firebase_child_groups)).child(group.getKey()));
+                        group.setAssignedUsersReference(GetUsersOfGroupReference(ctx, groupKey));
+                        callbackListener.OnSingleGroupResolved(group);
+                        i++;
+                    }
+                }
+            }
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                databaseError.toException().printStackTrace();
+            }
+        });
+    }
+
+    private static Query GetUsersOfGroupReference(Context ctx, String groupKey){
+        return FirebaseDatabase.getInstance().getReference()
+                .child(ctx.getString(R.string.firebase_user_to_group_assignment))
+                .orderByChild(UserToGroupAssignment.UTGA_KEY_GROUP_ID)
+                .equalTo(groupKey);
+    }
+
+    //region Callback interfaces
+
+    public interface IFirebaseCheckAuthCallback{
+        //todo: this callback should update nickname and user profileID in SP
+        void onCheckAuthorizationCompleted(int actionCode, boolean isAuthorized, String nickName);
+    }
+
+    public interface IFirebaseGetDataCheckCallback {
+        void onGetActiveGroupsCompleted(ArrayList<Group> groupsResult);
+
     }
 
     public interface IFirebaseSaveArrayOfObjectsCallback{
         void OnSavingFinishedSuccessfully(Stack<DatabaseReference> savedObjectsReferences);
         void OnSavingError(DatabaseError databaseError);
     }
+
+    public interface IFirebaseInitListenersCallback{
+        void OnSingleGroupResolved(Group group);
+    }
+
+    //endregion
 }

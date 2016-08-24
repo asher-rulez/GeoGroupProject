@@ -19,6 +19,7 @@ public class GroupCommonEvent implements IFirebaseSavable {
     private String userProfileID;
     private long createdUnixTime;
     private String message;
+    private long validUntilUnixTime;
 
     public double getLat() {
         return lat;
@@ -66,6 +67,14 @@ public class GroupCommonEvent implements IFirebaseSavable {
 
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public long getValidUntilUnixTime() {
+        return validUntilUnixTime;
+    }
+
+    public void setValidUntilUnixTime(long validUntilUnixTime) {
+        this.validUntilUnixTime = validUntilUnixTime;
     }
 
     @Exclude

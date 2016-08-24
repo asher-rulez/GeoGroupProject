@@ -202,20 +202,14 @@ public class CreateJoinGroupFragment extends Fragment implements View.OnClickLis
                         Query groupsQuery = groupsRef.orderByChild(Group.GROUP_KEY_GENERATED_ID).equalTo(groupName);
                         groupsQuery.addListenerForSingleValueEvent(new ValueEventListener() {
                             @Override
-                            public void onDataChange(DataSnapshot dataSnapshot) {
-                                if(!dataSnapshot.hasChildren()){
+                            public void onDataChange(final DataSnapshot dataSnapshot1) {
+                                //check if group exists
+                                if(!dataSnapshot1.hasChildren()){
                                     UIUtil.SetEditTextIsValid(getContext(), et_group_name_id, false);
                                     tv_group_name_validation.setText(getString(R.string.validation_message_no_such_group));
                                     return;
                                 }
-                                for(DataSnapshot ds : dataSnapshot.getChildren()){
-                                    Group tmp = ds.getValue(Group.class);
-                                    if(!tmp.getPassword().equals(et_password.getText().toString())) {
-                                        UIUtil.SetEditTextIsValid(getContext(), et_password, false);
-                                        tv_password_validation.setText(getString(R.string.password_incorrect));
-                                        return;
-                                    }
-                                }
+                                //check if user already assigned to group
                                 final DatabaseReference utgaRef
                                         = FirebaseDatabase.getInstance().getReference().child(getString(R.string.firebase_user_to_group_assignment));
                                 Query myAssignmentsQuery = utgaRef
@@ -223,15 +217,24 @@ public class CreateJoinGroupFragment extends Fragment implements View.OnClickLis
                                         .equalTo(SharedPreferencesUtil.GetMyProfileID(getContext()));
                                 myAssignmentsQuery.addListenerForSingleValueEvent(new ValueEventListener() {
                                     @Override
-                                    public void onDataChange(DataSnapshot dataSnapshot) {
-                                        if(dataSnapshot.hasChildren()){
-                                            for(DataSnapshot ds : dataSnapshot.getChildren()){
+                                    public void onDataChange(DataSnapshot dataSnapshot2) {
+                                        if(dataSnapshot2.hasChildren()){
+                                            for(DataSnapshot ds : dataSnapshot2.getChildren()){
                                                 UserToGroupAssignment tmp = ds.getValue(UserToGroupAssignment.class);
                                                 if(tmp.getGroupID().equals(groupName)){
                                                     UIUtil.SetEditTextIsValid(getContext(), et_group_name_id, false);
                                                     tv_group_name_validation.setText(getString(R.string.validation_message_already_assigned));
                                                     return;
                                                 }
+                                            }
+                                        }
+                                        //check password match
+                                        for(DataSnapshot ds : dataSnapshot1.getChildren()){
+                                            Group tmp = ds.getValue(Group.class);
+                                            if(!tmp.getPassword().equals(et_password.getText().toString())) {
+                                                UIUtil.SetEditTextIsValid(getContext(), et_password, false);
+                                                tv_password_validation.setText(getString(R.string.password_incorrect));
+                                                return;
                                             }
                                         }
                                         UserToGroupAssignment utga = new UserToGroupAssignment();

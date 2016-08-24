@@ -14,6 +14,7 @@ public class User implements IFirebaseSavable {
     public static final String USER_KEY_PROFILEID = "profileID";
     public static final String USER_KEY_PROFILETYPEID = "profileTypeID";
     public static final String USER_KEY_PHOTOURL = "photoURL";
+    public static final String USER_KEY_FCM_TOKEN = "fcmToken";
 
     public User(){ }
 
@@ -22,6 +23,7 @@ public class User implements IFirebaseSavable {
     private long profileTypeID;
     private String profileID;
     private String photoURL;
+    private String fcmToken;
 
     public String getUsername() {
         return username;
@@ -53,6 +55,14 @@ public class User implements IFirebaseSavable {
 
     public void setPhotoURL(String photoURL) {
         this.photoURL = photoURL;
+    }
+
+    public String getFcmToken() {
+        return fcmToken;
+    }
+
+    public void setFcmToken(String fcmToken) {
+        this.fcmToken = fcmToken;
     }
 
     @Exclude
