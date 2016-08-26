@@ -32,4 +32,14 @@
     <!-- Loading fragment -->
     <string name="loading_fragment_message">Please wait, loading application..</string>
 
+    <!-- Settings fragment -->
+
+    <string name="settings_item_location_report_frequency">Location report frequency</string>
+    <string name="settings_item_location_reports">Location reports</string>
+    <string name="settings_item_send_reports_from_background">Reporting when application in background</string>
+    <string name="settings_item_show_notification_background_reports">Show notification when reporting in background</string>
+    <string name="settings_item_keep_screen_on">Keep screen turned on</string>
+    <string name="settings_item_notifications">Notifications settings</string>
+    <string name="settings_item_user_accont">User account</string>
+
 </resources>
