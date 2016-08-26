@@ -204,11 +204,11 @@ public class MapFragment extends SupportMapFragment
                         && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     return null;
                 }
-                locationManager.requestSingleUpdate(LocationManager.GPS_PROVIDER, new LocationListener() {
+                locationManager.requestSingleUpdate(LocationManager.NETWORK_PROVIDER, new LocationListener() {
                     @Override
                     public void onLocationChanged(Location location) {
                         if (location != null)
-                            SetLastLocation(location);
+                            SetLastLocation(location, true);
                     }
 
                     @Override
@@ -217,10 +217,10 @@ public class MapFragment extends SupportMapFragment
                                 && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                             return;
                         }
-                        locationManager.requestSingleUpdate(LocationManager.NETWORK_PROVIDER, new LocationListener() {
+                        locationManager.requestSingleUpdate(LocationManager.GPS_PROVIDER, new LocationListener() {
                             @Override
                             public void onLocationChanged(Location location) {
-                                SetLastLocation(location);
+                                SetLastLocation(location, true);
                             }
 
                             @Override
@@ -239,12 +239,15 @@ public class MapFragment extends SupportMapFragment
                                 }
                                 Location loc = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
                                 if (loc != null) {
-                                    SetLastLocation(loc);
+                                    SetLastLocation(loc, true);
                                     return;
                                 }
                                 loc = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-                                if (loc != null)
-                                    SetLastLocation(loc);
+                                if (loc != null){
+                                    SetLastLocation(loc, true);
+                                    return;
+                                }
+                                CheckIfLocationSavedInSPAndCenterOnIt();
                             }
                         }, Looper.getMainLooper());
                     }
@@ -260,25 +263,34 @@ public class MapFragment extends SupportMapFragment
                 }, Looper.getMainLooper());
                 return null;
             }
-
-            @Override
-            protected void onPostExecute(Void aVoid) {
-                if (lastLocation == null) {
-                    LatLng latLng = SharedPreferencesUtil.GetLastLocationLatLng(getContext());
-                    if (latLng != null)
-                        SetLastLocation(latLng);
-                }
-                CenterMapOnPosition(lastLocation);
-            }
         }.execute();
     }
 
     private void SetLastLocation(LatLng latLng) {
         lastLocation = latLng;
     }
+    private void SetLastLocation(LatLng latLng, boolean ifCenterOnMyLocation){
+        SetLastLocation(latLng);
+        if(ifCenterOnMyLocation)
+            CheckIfLocationSavedInSPAndCenterOnIt();
+    }
 
     private void SetLastLocation(Location location) {
         lastLocation = location == null ? null : new LatLng(location.getLatitude(), location.getLongitude());
+    }
+    private void SetLastLocation(Location location, boolean ifCenterOnMyLocation){
+        SetLastLocation(location);
+        if(ifCenterOnMyLocation)
+            CheckIfLocationSavedInSPAndCenterOnIt();
+    }
+
+    private void CheckIfLocationSavedInSPAndCenterOnIt(){
+        if (lastLocation == null) {
+            LatLng latLngSP = SharedPreferencesUtil.GetLastLocationLatLng(getContext());
+            if (latLngSP != null)
+                SetLastLocation(latLngSP);
+        }
+        CenterMapOnPosition(lastLocation);
     }
 
     public void CenterMapOnPosition(Location location) {
