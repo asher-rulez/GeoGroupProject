@@ -5,6 +5,7 @@ import com.google.firebase.database.Exclude;
 import com.google.firebase.database.Query;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 
 import Utils.FirebaseUtil;
@@ -74,6 +75,7 @@ public class Group implements IFirebaseSavable, Comparable<Group> {
         return FirebaseUtil.FIREBASE_SAVABLE_TYPE_GROUP;
     }
 
+    @Exclude
     private DatabaseReference selfReference;
 
     @Exclude
@@ -81,10 +83,12 @@ public class Group implements IFirebaseSavable, Comparable<Group> {
         return selfReference;
     }
 
+    @Exclude
     public void setSelfReference(DatabaseReference selfReference) {
         this.selfReference = selfReference;
     }
 
+    @Exclude
     private Query assignedUsersReference;
 
     @Exclude
@@ -92,6 +96,7 @@ public class Group implements IFirebaseSavable, Comparable<Group> {
         return assignedUsersReference;
     }
 
+    @Exclude
     public void setAssignedUsersReference(Query usersReference) {
         this.assignedUsersReference = usersReference;
     }
@@ -105,14 +110,23 @@ public class Group implements IFirebaseSavable, Comparable<Group> {
         return 0;
     }
 
-    private ArrayList<User> users;
+    @Exclude
+    private Map<String, UserToGroupAssignment> userAssignments;
 
     @Exclude
-    public ArrayList<User> getUsers() {
-        return users;
+    public Map<String, UserToGroupAssignment> getUserAssignments() {
+        if(userAssignments == null)
+            userAssignments = new HashMap<>();
+        return userAssignments;
     }
 
-    public void setUsers(ArrayList<User> users) {
-        this.users = users;
+    @Exclude
+    private ArrayList<GroupCommonEvent> commonEvents;
+
+    @Exclude
+    public ArrayList<GroupCommonEvent> getCommonEvents() {
+        if(commonEvents == null)
+            commonEvents = new ArrayList<>();
+        return commonEvents;
     }
 }

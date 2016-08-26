@@ -77,4 +77,15 @@ public class UserToGroupAssignment implements IFirebaseSavable, Comparable<UserT
                 || this.getLastReportedLongitude() != userToGroupAssignment.getLastReportedLongitude()) return 1;
         return 0;
     }
+
+    private UserStatusUpdate userStatus;
+
+    public UserStatusUpdate getUserStatus() {
+        return userStatus;
+    }
+
+    @Exclude
+    public void setUserStatus(UserStatusUpdate userStatus) {
+        this.userStatus = userStatus;
+    }
 }

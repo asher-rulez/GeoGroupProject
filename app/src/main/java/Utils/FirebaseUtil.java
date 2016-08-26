@@ -37,7 +37,7 @@ public class FirebaseUtil {
     public static final int FIREBASE_SAVABLE_TYPE_USER_TO_GROUP_ASSIGNMENT = 6;
 
     public static void CheckAuthForActionCode(final Context ctx, final int actionCode, final IFirebaseCheckAuthCallback callbackListener){
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if(user == null) {
             Query currentUserQuery
                     = FirebaseDatabase.getInstance().getReference().child(ctx.getString(R.string.firebase_child_users))
@@ -51,6 +51,7 @@ public class FirebaseUtil {
                             if (user1.getProfileID().equals(CommonUtil.GetAndroidID(ctx))) {
                                 String nickname = user1.getUsername();
                                 SharedPreferencesUtil.SaveNicknameInSharedPreferences(ctx, nickname);
+                                SharedPreferencesUtil.SaveProfileIDInSharedPreferences(ctx, user1.getProfileID());
                                 callbackListener.onCheckAuthorizationCompleted(actionCode, true, nickname);
                             }
                         }
@@ -173,10 +174,7 @@ public class FirebaseUtil {
     }
 
     public static void GetSingleGroupReferenceByGroupKey(final Context ctx, final String groupKey, final IFirebaseInitListenersCallback callbackListener){
-        Query singleGroupQuery = FirebaseDatabase.getInstance().getReference()
-                .child(ctx.getString(R.string.firebase_child_groups))
-                .orderByChild(Group.GROUP_KEY_GENERATED_ID)
-                .equalTo(groupKey);
+        Query singleGroupQuery = GetQueryForSingleGroupByGroupKey(ctx, groupKey);
         singleGroupQuery.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
@@ -191,7 +189,7 @@ public class FirebaseUtil {
                         group.setKey(ds.getKey());
                         group.setSelfReference(FirebaseDatabase.getInstance().getReference()
                                 .child(ctx.getString(R.string.firebase_child_groups)).child(group.getKey()));
-                        group.setAssignedUsersReference(GetUsersOfGroupReference(ctx, groupKey));
+                        group.setAssignedUsersReference(GetUsersOfGroupQuery(ctx, groupKey));
                         callbackListener.OnSingleGroupResolved(group);
                         i++;
                     }
@@ -204,11 +202,25 @@ public class FirebaseUtil {
         });
     }
 
-    private static Query GetUsersOfGroupReference(Context ctx, String groupKey){
+    public static Query GetQueryForSingleGroupByGroupKey(Context ctx, String groupKey){
+        return FirebaseDatabase.getInstance().getReference()
+                .child(ctx.getString(R.string.firebase_child_groups))
+                .orderByChild(Group.GROUP_KEY_GENERATED_ID)
+                .equalTo(groupKey);
+    }
+
+    public static Query GetUsersOfGroupQuery(Context ctx, String groupKey){
         return FirebaseDatabase.getInstance().getReference()
                 .child(ctx.getString(R.string.firebase_user_to_group_assignment))
                 .orderByChild(UserToGroupAssignment.UTGA_KEY_GROUP_ID)
                 .equalTo(groupKey);
+    }
+
+    public static Query GetQueryForSingleUserByUserProfileID(Context ctx, String userProfileID){
+        return FirebaseDatabase.getInstance().getReference()
+                .child(ctx.getString(R.string.firebase_child_users))
+                .orderByChild(User.USER_KEY_PROFILEID)
+                .equalTo(userProfileID);
     }
 
     //region Callback interfaces

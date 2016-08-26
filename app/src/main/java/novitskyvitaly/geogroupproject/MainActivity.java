@@ -53,6 +53,7 @@ import Fragments.CreateJoinGroupFragment;
 import Fragments.LoadingFragment;
 import Fragments.LoginFragment;
 import Fragments.MapFragment;
+import Fragments.SettingsFragment;
 import Utils.CommonUtil;
 import Utils.FirebaseUtil;
 import Utils.GeoGroupBroadcastReceiver;
@@ -63,39 +64,59 @@ public class MainActivity extends AppCompatActivity
         MapFragment.OnMapFragmentInteractionListener,
         GeoGroupBroadcastReceiver.IBroadcastReceiverCallback,
         LoginFragment.OnLoginFragmentInteractionListener,
-        CreateJoinGroupFragment.OnCreateJoinGroupInteractionListener, FirebaseUtil.IFirebaseCheckAuthCallback, FirebaseUtil.IFirebaseInitListenersCallback {
+        CreateJoinGroupFragment.OnCreateJoinGroupInteractionListener, FirebaseUtil.IFirebaseCheckAuthCallback {
 
     private final String MY_TAG = "geog_main_act";
     private final static int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
+    boolean isInternetAvailable = false;
+    boolean isGoogleServiceAvailable = false;
+    GeoGroupBroadcastReceiver broadcastReceiver;
 
-    public static final int ACTION_CODE_FOR_JOIN_GROUP = 11;
-    public static final int ACTION_CODE_FOR_CREATE_GROUP = 12;
-    public static final int ACTION_CODE_INITIAL_GROUPS_CHECK = 13;
-    public static final int ACTION_CODE_START_SCREEN_ON_STARTUP = 14;
-    //public static final int AUTH_TYPE_NICKNAME = 13;
-    //public static final int AUTH_TYPE_FIREBASE = 14;
+    //region UI variables
 
     DrawerLayout drawer;
     Toolbar toolbar;
     ProgressDialog progressDialog = null;
     boolean isSideMenuOpened;
 
+    //endregion
+
+    //region fragments variables
+
+    public static final int ACTION_CODE_FOR_JOIN_GROUP = 11;
+    public static final int ACTION_CODE_FOR_CREATE_GROUP = 12;
+    public static final int ACTION_CODE_INITIAL_GROUPS_CHECK = 13;
+    public static final int ACTION_CODE_START_SCREEN_ON_STARTUP = 14;
+
+    int currentFragmentID;
     private final int FRAGMENT_ID_MAP = 1;
     private final int FRAGMENT_ID_LOGIN = 2;
-    private final int FRAGMENT_JOINCREATE = 3;
-    private final int FRAGMENT_LOADING = 4;
-    int currentFragmentID;
+    private final int FRAGMENT_ID_JOINCREATE = 3;
+    private final int FRAGMENT_ID_LOADING = 4;
+    private final int FRAGMENT_ID_SETTINGS = 5;
+
+    SettingsFragment settingsFragment;
     MapFragment mapFragment;
     LoginFragment loginFragment;
     CreateJoinGroupFragment createJoinFragment;
     LoadingFragment loadingFragment;
 
-    boolean isInternetAvailable = false;
-    boolean isGoogleServiceAvailable = false;
+    //endregion
 
-    GeoGroupBroadcastReceiver broadcastReceiver;
+    //region variables - runtime objects and event listeners
 
-    //private DatabaseReference geoGroupFirebaseRef;
+    Query myGroupsQuery;
+
+    Map<String, Group> myGroupsDictionary;
+    Map<String, User> usersDictionary;
+    Map<String, Query> usersByGroupKeyQueries;
+
+    ChildEventListener myGroupsAssignmentsListener;
+    ChildEventListener userAssignmentsToMyGroupsListener;
+    ChildEventListener commonEventsOfMyGroupsListener;
+    ChildEventListener userStatusUpdatesListener;
+
+    //endregion
 
     //region Activity overrides
 
@@ -225,7 +246,7 @@ public class MainActivity extends AppCompatActivity
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(intent);
             } else {
-                if (currentFragmentID == FRAGMENT_JOINCREATE && createJoinFragment != null)
+                if (currentFragmentID == FRAGMENT_ID_JOINCREATE && createJoinFragment != null)
                     createJoinFragment.ClearFields();
                 super.onBackPressed();
             }
@@ -367,7 +388,7 @@ public class MainActivity extends AppCompatActivity
         transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
         transaction.addToBackStack("createJoin");
         transaction.commit();
-        currentFragmentID = FRAGMENT_JOINCREATE;
+        currentFragmentID = FRAGMENT_ID_JOINCREATE;
     }
 
     private void SwitchToLoadingFragment() {
@@ -376,7 +397,7 @@ public class MainActivity extends AppCompatActivity
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.fl_fragments_container, loadingFragment);
         transaction.commit();
-        currentFragmentID = FRAGMENT_LOADING;
+        currentFragmentID = FRAGMENT_ID_LOADING;
     }
 
 
@@ -433,185 +454,176 @@ public class MainActivity extends AppCompatActivity
         switch (actionCode) {
             case ACTION_CODE_START_SCREEN_ON_STARTUP:
                 if (isAuthorized) {
+                    Log.i(MY_TAG, "authorized, continue to map");
                     SwitchToMapFragment();
                     new AsyncTask<Void, Void, Void>() {
                         @Override
                         protected Void doInBackground(Void... voids) {
-                            StartListeningToMyGroupsQuery();
+                            StartTrackingFirebaseDatabase();
                             return null;
                         }
                     }.execute();
                 } else {
+                    Log.i(MY_TAG, "not authorized, continue to login");
                     SwitchToLoginFragment(actionCode);
                 }
                 break;
         }
     }
-
-    private void StartListeningToFirebaseUpdates() {
-
-    }
-
-    private void StartListeningToMyGroupsQuery() {
-        Query myGroupsQuery = FirebaseUtil.GetMyGroupsQuery(this);
-        if (myGroupsChildEventListener == null)
-            myGroupsChildEventListener = new ChildEventListener() {
-                @Override
-                public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-                    UserToGroupAssignment utgaGroupAdded = dataSnapshot.getValue(UserToGroupAssignment.class);
-                    if (utgaGroupAdded != null) {
-                        Log.i(MY_TAG, "you were assigned to group:" + utgaGroupAdded.getGroupID());
-                        HandleGroupAdded(utgaGroupAdded.getGroupID());
-                    }
-                }
-
-                @Override
-                public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-                    Log.e(MY_TAG, "unexpected firebase event: onChildChanged for myGroupsListener");
-                }
-
-                @Override
-                public void onChildRemoved(DataSnapshot dataSnapshot) {
-                    UserToGroupAssignment utgaGroupAssignmentRemoved = dataSnapshot.getValue(UserToGroupAssignment.class);
-                    if (utgaGroupAssignmentRemoved != null)
-                        HandleGroupRemoved(utgaGroupAssignmentRemoved.getGroupID());
-                }
-
-                @Override
-                public void onChildMoved(DataSnapshot dataSnapshot, String s) {
-                }
-
-                @Override
-                public void onCancelled(DatabaseError databaseError) {
-                    databaseError.toException().printStackTrace();
-                }
-            };
-        myGroupsQuery.addChildEventListener(myGroupsChildEventListener);
-    }
-
-    private void HandleGroupAdded(String groupKey) {
-        FirebaseUtil.GetSingleGroupReferenceByGroupKey(this, groupKey, this);
-    }
-
-    private void HandleGroupRemoved(String groupKey) {
-        // todo: user was removed from group. this may occur as result of group removing or user was removed by admin. Implement both
-    }
-
-    private ChildEventListener myGroupsChildEventListener;
-    private ValueEventListener singleGroupValueEventListener;
-    private ArrayList<Group> myGroups;
-    private ChildEventListener assignedUsersChildEventListener;
-    private ValueEventListener singleUTGAValueEventListener;
-    private ArrayList<DatabaseReference> userAssignmentReferences;
-    private ArrayList<UserToGroupAssignment> userAssignments;
-    private ArrayList<User> usersAssignedToMyGroups;
-    private ArrayList<UserStatusUpdate> usersStatusUpdates;
-    private ArrayList<GroupCommonEvent> groupCommonEvents;
-
-    private void NotifyMyGroupsArrayChanged() {
-        //todo: if myGroups will be used in recyclerView - this will be the place for notification
-    }
-
-    private void NotifyUTGAChanged(UserToGroupAssignment utga) {
-        //todo: updating marker
-    }
-
-    @Override
-    public void OnSingleGroupResolved(final Group group) {
-        if (myGroups == null)
-            myGroups = new ArrayList<>();
-        myGroups.add(group);
-        if (singleGroupValueEventListener == null)
-            singleGroupValueEventListener = new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot dataSnapshot) {
-                    Log.i(MY_TAG, "group was updated");
-//                    if(!dataSnapshot.hasChildren()) return;
-//                    Group g = null;
-//                    for(DataSnapshot ds : dataSnapshot.getChildren())
-//                        g = ds.getValue(Group.class);
-                    Group g = dataSnapshot.getValue(Group.class);
-                    for (Group myGroup : myGroups) {
-                        if (myGroup.getGeneratedID().equals(g.getGeneratedID())) {
-                            if (myGroup.compareTo(g) != 0) {
-                                myGroup.setName(g.getName());
-                                myGroup.setPassword(g.getPassword());
-                                NotifyMyGroupsArrayChanged();
-                            }
-                            break;
-                        }
-                    }
-                }
-
-                @Override
-                public void onCancelled(DatabaseError databaseError) {
-                    databaseError.toException().printStackTrace();
-                }
-            };
-        group.getSelfReference().addValueEventListener(singleGroupValueEventListener);
-        if (singleUTGAValueEventListener == null)
-            singleUTGAValueEventListener = new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot dataSnapshot) {
-                    UserToGroupAssignment utgaUpdated = dataSnapshot.getValue(UserToGroupAssignment.class);
-                    if (utgaUpdated.getUserProfileID().equals(SharedPreferencesUtil.GetMyProfileID(getApplicationContext()))
-                            || userAssignments == null)
-                        return;
-                    for (UserToGroupAssignment utgaTmp : userAssignments) {
-                        if (utgaTmp.getUserProfileID().equals(utgaUpdated.getUserProfileID())
-                                && utgaTmp.getGroupID().equals(utgaUpdated.getGroupID())) {
-                            if (utgaTmp.compareTo(utgaUpdated) != 0) {
-                                utgaTmp.setLastReportedLatitude(utgaUpdated.getLastReportedLatitude());
-                                utgaTmp.setLastReportedLongitude(utgaUpdated.getLastReportedLongitude());
-                                NotifyUTGAChanged(utgaTmp);
-                            }
-                            break;
-                        }
-                    }
-                }
-
-                @Override
-                public void onCancelled(DatabaseError databaseError) {
-                    databaseError.toException().printStackTrace();
-                }
-            };
-        if (assignedUsersChildEventListener == null)
-            assignedUsersChildEventListener = new ChildEventListener() {
-                @Override
-                public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-                    UserToGroupAssignment utgaNew = dataSnapshot.getValue(UserToGroupAssignment.class);
-                    if (utgaNew.getUserProfileID().equals(SharedPreferencesUtil.GetMyProfileID(getApplicationContext())))
-                        return;
-                    if (userAssignments == null)
-                        userAssignments = new ArrayList<>();
-                    userAssignments.add(utgaNew);
-                    NotifyUTGAChanged(utgaNew);
-                    if (userAssignmentReferences == null)
-                        userAssignmentReferences = new ArrayList<>();
-                    DatabaseReference utgaRef = dataSnapshot.getRef();
-                    utgaRef.addValueEventListener(singleUTGAValueEventListener);
-                    userAssignmentReferences.add(utgaRef);
-                }
-
-                @Override
-                public void onChildRemoved(DataSnapshot dataSnapshot) {
-                    //todo: remove user, utga, remove listener from dRef and remove dRef
-                }
-
-                @Override
-                public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-                }
-
-                @Override
-                public void onChildMoved(DataSnapshot dataSnapshot, String s) {
-                }
-
-                @Override
-                public void onCancelled(DatabaseError databaseError) {
-                    databaseError.toException().printStackTrace();
-                }
-            };
-    }
+//
+//    private void StartListeningToFirebaseUpdates() {
+//
+//    }
+//
+//    private void StartListeningToMyGroupsQuery() {
+//        Query myGroupsQuery = FirebaseUtil.GetMyGroupsQuery(this);
+//        if (myGroupsChildEventListener == null)
+//            myGroupsChildEventListener = new ChildEventListener() {
+//                @Override
+//                public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+//                    UserToGroupAssignment utgaGroupAdded = dataSnapshot.getValue(UserToGroupAssignment.class);
+//                    if (utgaGroupAdded != null) {
+//                        Log.i(MY_TAG, "you were assigned to group:" + utgaGroupAdded.getGroupID());
+//                        HandleGroupAdded(utgaGroupAdded.getGroupID());
+//                    }
+//                }
+//
+//                @Override
+//                public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+//                    Log.e(MY_TAG, "unexpected firebase event: onChildChanged for myGroupsListener");
+//                }
+//
+//                @Override
+//                public void onChildRemoved(DataSnapshot dataSnapshot) {
+//                    UserToGroupAssignment utgaGroupAssignmentRemoved = dataSnapshot.getValue(UserToGroupAssignment.class);
+//                    if (utgaGroupAssignmentRemoved != null)
+//                        HandleGroupRemoved(utgaGroupAssignmentRemoved.getGroupID());
+//                }
+//
+//                @Override
+//                public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+//                }
+//
+//                @Override
+//                public void onCancelled(DatabaseError databaseError) {
+//                    databaseError.toException().printStackTrace();
+//                }
+//            };
+//        myGroupsQuery.addChildEventListener(myGroupsChildEventListener);
+//    }
+//
+////    private void HandleGroupAdded(String groupKey) {
+////        FirebaseUtil.GetSingleGroupReferenceByGroupKey(this, groupKey, this);
+////    }
+//
+//    private void HandleGroupRemoved(String groupKey) {
+//        // todo: user was removed from group. this may occur as result of group removing or user was removed by admin. Implement both
+//    }
+//
+//    private void NotifyMyGroupsArrayChanged() {
+//        //todo: if myGroups will be used in recyclerView - this will be the place for notification
+//    }
+//
+//    private void NotifyUTGAChanged(UserToGroupAssignment utga) {
+//        //todo: updating marker
+//    }
+//
+//    @Override
+//    public void OnSingleGroupResolved(final Group group) {
+//        if (myGroups == null)
+//            myGroups = new HashMap<>();
+//        myGroups.put(group.getGeneratedID(), group);
+//        if (singleGroupValueEventListener == null)
+//            singleGroupValueEventListener = new ValueEventListener() {
+//                @Override
+//                public void onDataChange(DataSnapshot dataSnapshot) {
+//                    Log.i(MY_TAG, "group was updated");
+////                    if(!dataSnapshot.hasChildren()) return;
+////                    Group g = null;
+////                    for(DataSnapshot ds : dataSnapshot.getChildren())
+////                        g = ds.getValue(Group.class);
+//                    Group g = dataSnapshot.getValue(Group.class);
+//                    for (Group myGroup : myGroups) {
+//                        if (myGroup.getGeneratedID().equals(g.getGeneratedID())) {
+//                            if (myGroup.compareTo(g) != 0) {
+//                                myGroup.setName(g.getName());
+//                                myGroup.setPassword(g.getPassword());
+//                                NotifyMyGroupsArrayChanged();
+//                            }
+//                            break;
+//                        }
+//                    }
+//                }
+//
+//                @Override
+//                public void onCancelled(DatabaseError databaseError) {
+//                    databaseError.toException().printStackTrace();
+//                }
+//            };
+//        group.getSelfReference().addValueEventListener(singleGroupValueEventListener);
+//        if (singleUTGAValueEventListener == null)
+//            singleUTGAValueEventListener = new ValueEventListener() {
+//                @Override
+//                public void onDataChange(DataSnapshot dataSnapshot) {
+//                    UserToGroupAssignment utgaUpdated = dataSnapshot.getValue(UserToGroupAssignment.class);
+//                    if (utgaUpdated.getUserProfileID().equals(SharedPreferencesUtil.GetMyProfileID(getApplicationContext()))
+//                            || userAssignments == null)
+//                        return;
+//                    for (UserToGroupAssignment utgaTmp : userAssignments) {
+//                        if (utgaTmp.getUserProfileID().equals(utgaUpdated.getUserProfileID())
+//                                && utgaTmp.getGroupID().equals(utgaUpdated.getGroupID())) {
+//                            if (utgaTmp.compareTo(utgaUpdated) != 0) {
+//                                utgaTmp.setLastReportedLatitude(utgaUpdated.getLastReportedLatitude());
+//                                utgaTmp.setLastReportedLongitude(utgaUpdated.getLastReportedLongitude());
+//                                NotifyUTGAChanged(utgaTmp);
+//                            }
+//                            break;
+//                        }
+//                    }
+//                }
+//
+//                @Override
+//                public void onCancelled(DatabaseError databaseError) {
+//                    databaseError.toException().printStackTrace();
+//                }
+//            };
+//        if (assignedUsersChildEventListener == null)
+//            assignedUsersChildEventListener = new ChildEventListener() {
+//                @Override
+//                public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+//                    UserToGroupAssignment utgaNew = dataSnapshot.getValue(UserToGroupAssignment.class);
+//                    if (utgaNew.getUserProfileID().equals(SharedPreferencesUtil.GetMyProfileID(getApplicationContext())))
+//                        return;
+//                    if (userAssignments == null)
+//                        userAssignments = new ArrayList<>();
+//                    userAssignments.add(utgaNew);
+//                    NotifyUTGAChanged(utgaNew);
+//                    if (userAssignmentReferences == null)
+//                        userAssignmentReferences = new ArrayList<>();
+//                    DatabaseReference utgaRef = dataSnapshot.getRef();
+//                    utgaRef.addValueEventListener(singleUTGAValueEventListener);
+//                    userAssignmentReferences.add(utgaRef);
+//                }
+//
+//                @Override
+//                public void onChildRemoved(DataSnapshot dataSnapshot) {
+//                    //todo: remove user, utga, remove listener from dRef and remove dRef
+//                }
+//
+//                @Override
+//                public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+//                }
+//
+//                @Override
+//                public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+//                }
+//
+//                @Override
+//                public void onCancelled(DatabaseError databaseError) {
+//                    databaseError.toException().printStackTrace();
+//                }
+//            };
+//    }
 
     //endregion
 
@@ -638,6 +650,308 @@ public class MainActivity extends AppCompatActivity
 //
 //        return super.onOptionsItemSelected(item);
 //    }
+
+    //endregion
+
+    //region runtime data model and event listeners
+
+    public Map<String, Group> getMyGroupsDictionary() {
+        if(myGroupsDictionary == null)
+            myGroupsDictionary = new HashMap<>();
+        return myGroupsDictionary;
+    }
+
+    public Map<String, User> getUsersDictionary() {
+        if(usersDictionary == null)
+            usersDictionary = new HashMap<>();
+        return usersDictionary;
+    }
+
+    public Map<String, Query> getUsersByGroupKeyQueries() {
+        if(usersByGroupKeyQueries == null)
+            usersByGroupKeyQueries = new HashMap<>();
+        return usersByGroupKeyQueries;
+    }
+
+    private void StartTrackingFirebaseDatabase(){
+        myGroupsQuery = FirebaseUtil.GetMyGroupsQuery(this);
+        myGroupsQuery.addChildEventListener(getMyGroupsAssignmentsListener());
+    }
+
+    public ChildEventListener getMyGroupsAssignmentsListener() {
+        if(myGroupsAssignmentsListener == null)
+            myGroupsAssignmentsListener = new ChildEventListener() {
+                @Override
+                public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                    final UserToGroupAssignment utga = dataSnapshot.getValue(UserToGroupAssignment.class);
+                    if(utga == null){
+                        Log.e(MY_TAG, "utga null: getMyGroupsAssignmentsListener onChildAdded");
+                        return;
+                    }
+                    if(getMyGroupsDictionary().containsKey(utga.getGroupID())){
+                        Log.e(MY_TAG, "group already exists: getMyGroupsAssignmentsListener onChildAdded");
+                        return;
+                    }
+                    Log.i(MY_TAG, "got group for myGroups: " + utga.getGroupID());
+                    FirebaseUtil.GetQueryForSingleGroupByGroupKey(getApplicationContext(), utga.getGroupID())
+                            .addListenerForSingleValueEvent(new ValueEventListener() {
+                                @Override
+                                public void onDataChange(DataSnapshot dataSnapshot) {
+                                    int i = 0;
+                                    for(DataSnapshot ds : dataSnapshot.getChildren()){
+                                        if(i > 0){
+                                            Log.e(MY_TAG, "unexpected amount of groups got by one key!");
+                                            return;
+                                        }
+                                        Group group1 = ds.getValue(Group.class);
+                                        group1.setKey(ds.getKey());
+                                        group1.setSelfReference(FirebaseDatabase.getInstance().getReference()
+                                                .child(getApplicationContext().getString(R.string.firebase_child_groups))
+                                                .child(group1.getKey()));
+                                        getMyGroupsDictionary().put(group1.getGeneratedID(), group1);
+                                        Query usersByGroupQuery = FirebaseUtil.GetUsersOfGroupQuery(getApplicationContext(), group1.getGeneratedID());
+                                        usersByGroupQuery.addChildEventListener(getUserAssignmentsToMyGroupsListener());
+                                        getUsersByGroupKeyQueries().put(group1.getGeneratedID(), usersByGroupQuery);
+                                        NotifyGroupAdded(group1);
+                                        i++;
+                                    }
+                                }
+
+                                @Override
+                                public void onCancelled(DatabaseError databaseError) {
+                                    databaseError.toException().printStackTrace();
+                                }
+                            });
+                }
+
+                @Override
+                public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+                    Log.i(MY_TAG, "getMyGroupsAssignmentsListener onChildChanged - got update about my UTGA updated");
+                }
+
+                @Override
+                public void onChildRemoved(DataSnapshot dataSnapshot) {
+                    UserToGroupAssignment utga = dataSnapshot.getValue(UserToGroupAssignment.class);
+                    if(utga == null){
+                        Log.e(MY_TAG, "group null: getMyGroupsAssignmentsListener onChildRemoved");
+                        return;
+                    }
+                    if(!getMyGroupsDictionary().containsKey(utga.getGroupID())){
+                        Log.e(MY_TAG, "group doesn't exist in myGroups: getMyGroupsAssignmentsListener onChildRemoved");
+                        return;
+                    }
+                    Log.i(MY_TAG, "group removed: " + utga.getGroupID());
+                    Group group = getMyGroupsDictionary().get(utga.getGroupID());
+                    getMyGroupsDictionary().remove(utga.getGroupID());
+                    NotifyGroupRemoved(group);
+                    Query q = getUsersByGroupKeyQueries().get(group.getGeneratedID());
+                    if(q == null){
+                        Log.e(MY_TAG, "users by group key query not found");
+                        return;
+                    }
+                    q.removeEventListener(getUserAssignmentsToMyGroupsListener());
+                }
+
+                @Override
+                public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                    databaseError.toException().printStackTrace();
+                }
+            };
+        return myGroupsAssignmentsListener;
+    }
+
+    private void NotifyGroupAdded(Group group){
+        Log.i(MY_TAG, "notified about group added to myGroups");
+    }
+    private void NotifyGroupRemoved(Group group){
+        Log.i(MY_TAG, "notified about group removed");
+    }
+
+    public ChildEventListener getUserAssignmentsToMyGroupsListener() {
+        if(userAssignmentsToMyGroupsListener == null)
+            userAssignmentsToMyGroupsListener = new ChildEventListener() {
+                @Override
+                public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                    final UserToGroupAssignment utga = dataSnapshot.getValue(UserToGroupAssignment.class);
+                    if(utga == null){
+                        Log.e(MY_TAG, "utga null: getUserAssignmentsToMyGroupsListener onChildAdded");
+                        return;
+                    }
+                    if(!getMyGroupsDictionary().containsKey(utga.getGroupID())){
+                        Log.e(MY_TAG, "group not found: getUserAssignmentsToMyGroupsListener onChildAdded");
+                        return;
+                    }
+                    if(utga.getUserProfileID().equals(SharedPreferencesUtil.GetMyProfileID(getApplicationContext())))
+                        return; // my own assignment
+                    Log.i(MY_TAG, "got user (" + utga.getUserProfileID() + ") joined group: " + utga.getGroupID());
+                    if(getMyGroupsDictionary().get(utga.getGroupID()).getUserAssignments().containsKey(utga.getUserProfileID())){
+                        Log.e(MY_TAG, "user assignment already exists in this group");
+                        //todo: can go to onChildChanged algorythm or do nothing
+                        return;
+                    }
+                    HandleUserJoinedGroup(utga);
+                }
+
+                @Override
+                public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+                    final UserToGroupAssignment utga = dataSnapshot.getValue(UserToGroupAssignment.class);
+                    if(utga == null){
+                        Log.e(MY_TAG, "utga null: getUserAssignmentsToMyGroupsListener onChildAdded");
+                        return;
+                    }
+                    if(!getMyGroupsDictionary().containsKey(utga.getGroupID())){
+                        Log.e(MY_TAG, "group not found: getUserAssignmentsToMyGroupsListener onChildAdded");
+                        return;
+                    }
+                    if(utga.getUserProfileID().equals(SharedPreferencesUtil.GetMyProfileID(getApplicationContext())))
+                        return; // my own assignment
+                    if(!getMyGroupsDictionary().get(utga.getGroupID()).getUserAssignments().containsKey(utga.getUserProfileID())){
+                        HandleUserJoinedGroup(utga);
+                    } else {
+                        getMyGroupsDictionary().get(utga.getGroupID()).getUserAssignments().remove(utga.getUserProfileID());
+                        getMyGroupsDictionary().get(utga.getGroupID()).getUserAssignments().put(utga.getUserProfileID(), utga);
+                        NotifyUserUpdatedLocation(utga);
+                    }
+                }
+
+                @Override
+                public void onChildRemoved(DataSnapshot dataSnapshot) {
+                    final UserToGroupAssignment utga = dataSnapshot.getValue(UserToGroupAssignment.class);
+                    if(utga == null){
+                        Log.e(MY_TAG, "utga null: getUserAssignmentsToMyGroupsListener onChildAdded");
+                        return;
+                    }
+                    if(!getMyGroupsDictionary().containsKey(utga.getGroupID())){
+                        Log.e(MY_TAG, "group not found: getUserAssignmentsToMyGroupsListener onChildAdded");
+                        return;
+                    }
+                    getMyGroupsDictionary().get(utga.getGroupID()).getUserAssignments().remove(utga.getUserProfileID());
+                    if(!utga.getUserProfileID().equals(SharedPreferencesUtil.GetMyProfileID(getApplicationContext())))
+                        NotifyUserLeftGroup(utga);
+                }
+
+                @Override
+                public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                    databaseError.toException().printStackTrace();
+                }
+            };
+        return userAssignmentsToMyGroupsListener;
+    }
+
+    private void HandleUserJoinedGroup(final UserToGroupAssignment utga){
+        getMyGroupsDictionary().get(utga.getGroupID()).getUserAssignments().put(utga.getUserProfileID(), utga);
+        if(getUsersDictionary().containsKey(utga.getUserProfileID()))
+            NotifyUserJoinedGroup(utga);
+        else {
+            FirebaseUtil.GetQueryForSingleUserByUserProfileID(getApplicationContext(), utga.getUserProfileID())
+                    .addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(DataSnapshot dataSnapshot) {
+                            int i = 0;
+                            for(DataSnapshot ds : dataSnapshot.getChildren()){
+                                if(i > 0){
+                                    Log.e(MY_TAG, "unexpected amount of users got by one profileID!");
+                                    return;
+                                }
+                                User user = ds.getValue(User.class);
+                                user.setKey(ds.getKey());
+                                getUsersDictionary().put(user.getProfileID(), user);
+                                NotifyUserJoinedGroup(utga);
+                                i++;
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled(DatabaseError databaseError) {
+                            databaseError.toException().printStackTrace();
+                        }
+                    });
+        }
+    }
+
+    private void NotifyUserJoinedGroup(UserToGroupAssignment utga){
+        Log.i(MY_TAG, "notified user joined group");
+    }
+
+    private void NotifyUserUpdatedLocation(UserToGroupAssignment utga){
+        Log.i(MY_TAG, "notified user updated location");
+    }
+
+    private void NotifyUserLeftGroup(UserToGroupAssignment utga){
+        Log.i(MY_TAG, "notified user left group");
+    }
+
+    public ChildEventListener getCommonEventsOfMyGroupsListener() {
+        if(commonEventsOfMyGroupsListener == null)
+            commonEventsOfMyGroupsListener = new ChildEventListener() {
+                @Override
+                public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+
+                }
+
+                @Override
+                public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+
+                }
+
+                @Override
+                public void onChildRemoved(DataSnapshot dataSnapshot) {
+
+                }
+
+                @Override
+                public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                    databaseError.toException().printStackTrace();
+                }
+            };
+        return commonEventsOfMyGroupsListener;
+    }
+
+    public ChildEventListener getUserStatusUpdatesListener() {
+        if(userStatusUpdatesListener == null)
+            userStatusUpdatesListener = new ChildEventListener() {
+                @Override
+                public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+
+                }
+
+                @Override
+                public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+
+                }
+
+                @Override
+                public void onChildRemoved(DataSnapshot dataSnapshot) {
+
+                }
+
+                @Override
+                public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                    databaseError.toException().printStackTrace();
+                }
+            };
+        return userStatusUpdatesListener;
+    }
 
     //endregion
 
