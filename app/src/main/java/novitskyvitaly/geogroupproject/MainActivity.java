@@ -88,6 +88,7 @@ public class MainActivity extends AppCompatActivity
     public static final int ACTION_CODE_FOR_CREATE_GROUP = 12;
     public static final int ACTION_CODE_INITIAL_GROUPS_CHECK = 13;
     public static final int ACTION_CODE_START_SCREEN_ON_STARTUP = 14;
+    public static final int ACTION_CODE_START_LOCATION_REPORT_SERVICE = 15;
 
     int currentFragmentID;
     private final int FRAGMENT_ID_MAP = 1;
@@ -136,7 +137,7 @@ public class MainActivity extends AppCompatActivity
 //        if (savedInstanceState != null) {
 //        }
 
-        final FirebaseUtil.IFirebaseCheckAuthCallback authListener = this;
+        //final FirebaseUtil.IFirebaseCheckAuthCallback authListener = this;
         //geoGroupFirebaseRef = FirebaseDatabase.getInstance().getReference();
         if (SharedPreferencesUtil.GetFCMTokenFromSharedPreferences(this).equals(""))
             new AsyncTask<Void, Void, Void>() {
@@ -153,10 +154,11 @@ public class MainActivity extends AppCompatActivity
                 @Override
                 protected void onPostExecute(Void aVoid) {
                     super.onPostExecute(aVoid);
-                    CheckAuthorization(authListener);
+                    RequestPermissionsBeforeCheckingAuth();
+                    //CheckAuthorization(authListener);
                 }
             }.execute();
-        else CheckAuthorization(authListener);
+        else RequestPermissionsBeforeCheckingAuth();//CheckAuthorization(authListener);
     }
 
     private void CheckAuthorization(final FirebaseUtil.IFirebaseCheckAuthCallback callbackListener) {
@@ -169,11 +171,26 @@ public class MainActivity extends AppCompatActivity
         }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
+    private void RequestPermissionsBeforeCheckingAuth() {
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                || ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            CommonUtil.RequestLocationPermissions(this, ACTION_CODE_START_SCREEN_ON_STARTUP);
+        } else CheckAuthorization(this);
+    }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (!SharedPreferencesUtil.GetIsLocationUpdateServiceRunning(this))
-            LocationListenerService.startLocationListenerService(this);
+        switch (requestCode){
+            case ACTION_CODE_START_SCREEN_ON_STARTUP:
+                CheckAuthorization(this);
+                break;
+            case ACTION_CODE_START_LOCATION_REPORT_SERVICE:
+                if (!LocationListenerService.IsServiceRunning)
+                    LocationListenerService.startLocationListenerService(this);
+                break;
+        }
+
     }
 
     @Override
@@ -324,9 +341,10 @@ public class MainActivity extends AppCompatActivity
         int actionCode = intent.getIntExtra(GeoGroupBroadcastReceiver.BROADCAST_EXTRA_ACTION_KEY, -1);
         switch (actionCode) {
             case GeoGroupBroadcastReceiver.ACTION_CODE_USER_LOCATION_RECEIVED:
-                Location location = (Location) intent.getParcelableExtra(GeoGroupBroadcastReceiver.BROADCAST_EXTRA_LOCATION_REPORT_KEY);
-                if (location != null && currentFragmentID == FRAGMENT_ID_MAP && mapFragment != null)
-                    mapFragment.CenterMapOnPosition(location);
+//                Location location = (Location) intent.getParcelableExtra(GeoGroupBroadcastReceiver.BROADCAST_EXTRA_LOCATION_REPORT_KEY);
+//                if (location != null && currentFragmentID == FRAGMENT_ID_MAP && mapFragment != null)
+//                    mapFragment.CenterMapOnPosition(location);
+                //todo: report location to fbdb
                 break;
         }
     }
@@ -436,15 +454,16 @@ public class MainActivity extends AppCompatActivity
         currentFragmentID = FRAGMENT_ID_LOADING;
     }
 
-
-    @Override
-    public void onLoginFragmentInteraction(Uri uri) {
-
-    }
-
     @Override
     public void onLoginMade(int afterLoginAction) {
         SwitchToMapFragment();
+        new AsyncTask<Void, Void, Void>() {
+            @Override
+            protected Void doInBackground(Void... voids) {
+                StartTrackingFirebaseDatabase();
+                return null;
+            }
+        }.execute();
         //todo:continue to action
     }
 
@@ -478,20 +497,20 @@ public class MainActivity extends AppCompatActivity
     public void onCheckAuthorizationCompleted(int actionCode, boolean isAuthorized, String nickName) {
         switch (actionCode) {
             case ACTION_CODE_START_SCREEN_ON_STARTUP:
-                if (isAuthorized) {
-                    Log.i(MY_TAG, "authorized, continue to map");
-                    SwitchToMapFragment();
-                    new AsyncTask<Void, Void, Void>() {
-                        @Override
-                        protected Void doInBackground(Void... voids) {
-                            StartTrackingFirebaseDatabase();
-                            return null;
-                        }
-                    }.execute();
-                } else {
-                    Log.i(MY_TAG, "not authorized, continue to login");
-                    SwitchToLoginFragment(actionCode);
-                }
+                    if (isAuthorized) {
+                        Log.i(MY_TAG, "authorized, continue to map");
+                        SwitchToMapFragment();
+                        new AsyncTask<Void, Void, Void>() {
+                            @Override
+                            protected Void doInBackground(Void... voids) {
+                                StartTrackingFirebaseDatabase();
+                                return null;
+                            }
+                        }.execute();
+                    } else {
+                        Log.i(MY_TAG, "not authorized, continue to login");
+                        SwitchToLoginFragment(actionCode);
+                    }
                 break;
         }
     }
@@ -644,6 +663,8 @@ public class MainActivity extends AppCompatActivity
                     }
                     if(utga.getUserProfileID().equals(SharedPreferencesUtil.GetMyProfileID(getApplicationContext())))
                         return; // my own assignment
+                    if(!LocationListenerService.IsServiceRunning)
+                        StartLocationReportService();
                     Log.i(MY_TAG, "got user (" + utga.getUserProfileID() + ") joined group: " + utga.getGroupID());
                     if(getMyGroupsDictionary().get(utga.getGroupID()).getUserAssignments().containsKey(utga.getUserProfileID())){
                         Log.e(MY_TAG, "user assignment already exists in this group");
@@ -689,6 +710,8 @@ public class MainActivity extends AppCompatActivity
                     getMyGroupsDictionary().get(utga.getGroupID()).getUserAssignments().remove(utga.getUserProfileID());
                     if(!utga.getUserProfileID().equals(SharedPreferencesUtil.GetMyProfileID(getApplicationContext())))
                         NotifyUserLeftGroup(utga);
+                    if(!CheckIfThereAreGroupsWithUsers())
+                        SharedPreferencesUtil.SetShouldStopService(getApplicationContext(), true);
                 }
 
                 @Override
@@ -702,6 +725,14 @@ public class MainActivity extends AppCompatActivity
                 }
             };
         return userAssignmentsToMyGroupsListener;
+    }
+
+    private boolean CheckIfThereAreGroupsWithUsers(){
+        for(String groupKey : getMyGroupsDictionary().keySet()){
+            if(getMyGroupsDictionary().get(groupKey).getUserAssignments().size() > 0)
+                return true;
+        }
+        return false;
     }
 
     private void HandleUserJoinedGroup(final UserToGroupAssignment utga){
@@ -737,14 +768,31 @@ public class MainActivity extends AppCompatActivity
 
     private void NotifyUserJoinedGroup(UserToGroupAssignment utga){
         Log.i(MY_TAG, "notified user joined group");
+        User user = getUsersDictionary().get(utga.getUserProfileID());
+        Group group = getMyGroupsDictionary().get(utga.getGroupID());
+        Snackbar.make(toolbar,
+                getString(R.string.snackbar_user_joined_group).replace("{0}", user.getUsername()).replace("{1}", group.getName()),
+                Snackbar.LENGTH_SHORT).show();
+        if(mapFragment != null)//todo: add check if I'm tracking this group
+            mapFragment.AddMarkerForNewUser(user.getUsername(), group.getName(), utga.getLastReportedLatitude(), utga.getLastReportedLongitude());
     }
 
     private void NotifyUserUpdatedLocation(UserToGroupAssignment utga){
         Log.i(MY_TAG, "notified user updated location");
+        if(mapFragment != null) {//todo: add check if I'm tracking this group
+            User user = getUsersDictionary().get(utga.getUserProfileID());
+            Group group = getMyGroupsDictionary().get(utga.getGroupID());
+            mapFragment.MoveMarker(user.getUsername(), group.getName(), utga.getLastReportedLatitude(), utga.getLastReportedLongitude());
+        }
     }
 
     private void NotifyUserLeftGroup(UserToGroupAssignment utga){
         Log.i(MY_TAG, "notified user left group");
+        if(mapFragment != null){
+            User user = getUsersDictionary().get(utga.getUserProfileID());
+            Group group = getMyGroupsDictionary().get(utga.getGroupID());
+            mapFragment.RemoveMarker(user.getUsername(), group.getName());
+        }
     }
 
     public ChildEventListener getCommonEventsOfMyGroupsListener() {

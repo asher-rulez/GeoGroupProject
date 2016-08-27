@@ -3,4 +3,5 @@
     <string name="firebase_child_users">Users</string>
     <string name="firebase_child_groups">Groups</string>
     <string name="firebase_user_to_group_assignment">UserToGroupAssignments</string>
+    <string name="firebase_location_reports">UserLocationReports</string>
 </resources>

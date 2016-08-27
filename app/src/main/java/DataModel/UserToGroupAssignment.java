@@ -14,6 +14,7 @@ public class UserToGroupAssignment implements IFirebaseSavable, Comparable<UserT
     public final static String UTGA_KEY_USER_PROFILE_ID = "userProfileID";
     public final static String UTGA_KEY_LAST_LATITUDE = "lastReportedLatitude";
     public final static String UTGA_KEY_LAST_LONGITUDE = "lastReportedLongitude";
+    public final static String UTGA_KEY_IS_TRACKING = "isTracking";
 
     public UserToGroupAssignment(){}
 
@@ -22,6 +23,7 @@ public class UserToGroupAssignment implements IFirebaseSavable, Comparable<UserT
     private String userProfileID;
     private Double lastReportedLatitude;
     private Double lastReportedLongitude;
+    private boolean isTracking;
 
     public String getGroupID() {
         return groupID;
@@ -53,6 +55,14 @@ public class UserToGroupAssignment implements IFirebaseSavable, Comparable<UserT
 
     public void setLastReportedLongitude(Double lastReportedLongitude) {
         this.lastReportedLongitude = lastReportedLongitude;
+    }
+
+    public boolean getIsTracking() {
+        return isTracking;
+    }
+
+    public void setIsTracking(boolean tracking) {
+        isTracking = tracking;
     }
 
     @Exclude

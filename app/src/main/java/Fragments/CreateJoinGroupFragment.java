@@ -18,6 +18,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import com.google.android.gms.maps.model.LatLng;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -240,6 +241,12 @@ public class CreateJoinGroupFragment extends Fragment implements View.OnClickLis
                                         UserToGroupAssignment utga = new UserToGroupAssignment();
                                         utga.setGroupID(groupName);
                                         utga.setUserProfileID(SharedPreferencesUtil.GetMyProfileID(getContext()));
+                                        utga.setIsTracking(true);
+                                        LatLng latLng = SharedPreferencesUtil.GetLastLocationLatLng(getContext());
+                                        if(latLng != null){
+                                            utga.setLastReportedLatitude(latLng.latitude);
+                                            utga.setLastReportedLongitude(latLng.longitude);
+                                        }
                                         utgaRef.push().setValue(utga);
                                         if(mListener != null)
                                             mListener.onSuccessCreateJoinGroup();
@@ -271,6 +278,12 @@ public class CreateJoinGroupFragment extends Fragment implements View.OnClickLis
         UserToGroupAssignment utga = new UserToGroupAssignment();
         utga.setGroupID(generatedGroupID);
         utga.setUserProfileID(SharedPreferencesUtil.GetMyProfileID(getContext()));
+        utga.setIsTracking(true);
+        LatLng latLng = SharedPreferencesUtil.GetLastLocationLatLng(getContext());
+        if(latLng != null){
+            utga.setLastReportedLatitude(latLng.latitude);
+            utga.setLastReportedLongitude(latLng.longitude);
+        }
 
         ArrayList<IFirebaseSavable> savables = new ArrayList<>();
         savables.add(group);

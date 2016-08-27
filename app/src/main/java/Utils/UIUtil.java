@@ -34,13 +34,13 @@ public class UIUtil {
         else field.getBackground()
                 .setColorFilter(ContextCompat.getColor(context, R.color.validation_red_text_color), PorterDuff.Mode.SRC_ATOP);
 
-        Bitmap validationBitmap = decodeScaledBitmapFromDrawableResource(context.getResources(),
-                isValid ? R.drawable.validation_ok : R.drawable.validation_wrong,
-                context.getResources().getDimensionPixelSize(R.dimen.edittext_validation_img_size),
-                context.getResources().getDimensionPixelSize(R.dimen.edittext_validation_img_size));
-        Drawable validationDrawable = new BitmapDrawable(context.getResources(), validationBitmap);
-        field.setCompoundDrawablesWithIntrinsicBounds(validationDrawable, null, null, null);
-        field.setCompoundDrawablePadding(10);
+//        Bitmap validationBitmap = decodeScaledBitmapFromDrawableResource(context.getResources(),
+//                isValid ? R.drawable.validation_ok : R.drawable.validation_wrong,
+//                context.getResources().getDimensionPixelSize(R.dimen.edittext_validation_img_size),
+//                context.getResources().getDimensionPixelSize(R.dimen.edittext_validation_img_size));
+//        Drawable validationDrawable = new BitmapDrawable(context.getResources(), validationBitmap);
+//        field.setCompoundDrawablesWithIntrinsicBounds(validationDrawable, null, null, null);
+//        field.setCompoundDrawablePadding(10);
     }
 
     public static void RemoveValidationFromEditText(Context context, EditText field) {
@@ -53,6 +53,7 @@ public class UIUtil {
         final BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
         BitmapFactory.decodeResource(resources, drawableID, options);
+
         options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
         options.inJustDecodeBounds = false;
         return BitmapFactory.decodeResource(resources, drawableID, options);
@@ -64,9 +65,13 @@ public class UIUtil {
         final int width = options.outWidth;
         int inSampleSize = 1;
         if (height > reqHeight || width > reqWidth) {
-            final int heightRatio = Math.round((float) height / (float) reqHeight);
-            final int widthRatio = Math.round((float) width / (float) reqWidth);
-            inSampleSize = heightRatio < widthRatio ? heightRatio : widthRatio;
+            final int halfHeight = height / 2;
+            final int halfWidth = width / 2;
+
+            while ((halfHeight / inSampleSize) > reqHeight
+                    && (halfWidth / inSampleSize) > reqWidth){
+                inSampleSize *= 2;
+            }
         }
         return inSampleSize;
     }

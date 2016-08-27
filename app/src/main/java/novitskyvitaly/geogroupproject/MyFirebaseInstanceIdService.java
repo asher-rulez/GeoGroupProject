@@ -20,6 +20,7 @@ public class MyFirebaseInstanceIdService extends FirebaseInstanceIdService {
         if(token != null){
             Log.i(MY_TAG, "got token: " + token);
             SharedPreferencesUtil.SaveFCMTokenInSharedPreferences(getApplicationContext(), token);
+            //todo: update firebase - save refreshed token in user
         }
     }
 }

@@ -52,13 +52,6 @@ public class LoginFragment extends Fragment implements View.OnClickListener {
         return inflater.inflate(R.layout.fragment_login, container, false);
     }
 
-    // TODO: Rename method, update argument and hook method into UI event
-    public void onButtonPressed(Uri uri) {
-        if (mListener != null) {
-            mListener.onLoginFragmentInteraction(uri);
-        }
-    }
-
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
@@ -224,8 +217,6 @@ public class LoginFragment extends Fragment implements View.OnClickListener {
     //endregion
 
     public interface OnLoginFragmentInteractionListener {
-        // TODO: Update argument type and name
-        void onLoginFragmentInteraction(Uri uri);
         void onLoginMade(int afterLoginAction);
     }
 }

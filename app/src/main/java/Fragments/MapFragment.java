@@ -3,6 +3,7 @@ package Fragments;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -29,8 +30,11 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -40,10 +44,16 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
 import DataModel.User;
+import DataModel.UserToGroupAssignment;
 import Utils.CommonUtil;
 import Utils.FirebaseUtil;
 import Utils.SharedPreferencesUtil;
+import Utils.UIUtil;
 import novitskyvitaly.geogroupproject.MainActivity;
 import novitskyvitaly.geogroupproject.R;
 
@@ -61,6 +71,8 @@ public class MapFragment extends SupportMapFragment
     SupportMapFragment mapFragment;
     GoogleMap googleMap;
     LatLng lastLocation;
+
+    Map<String, Marker> myMarkers;
 
     private Context appContext;
     private OnMapFragmentInteractionListener mListener;
@@ -267,6 +279,8 @@ public class MapFragment extends SupportMapFragment
     }
 
     private void SetLastLocation(LatLng latLng) {
+        if(latLng != null)
+            SharedPreferencesUtil.SaveLocationInSharedPreferences(getContext(), latLng.latitude, latLng.longitude, new Date());
         lastLocation = latLng;
     }
     private void SetLastLocation(LatLng latLng, boolean ifCenterOnMyLocation){
@@ -276,6 +290,8 @@ public class MapFragment extends SupportMapFragment
     }
 
     private void SetLastLocation(Location location) {
+        if(location != null)
+            SharedPreferencesUtil.SaveLocationInSharedPreferences(getContext(), location.getLatitude(), location.getLongitude(), new Date());
         lastLocation = location == null ? null : new LatLng(location.getLatitude(), location.getLongitude());
     }
     private void SetLastLocation(Location location, boolean ifCenterOnMyLocation){
@@ -310,6 +326,42 @@ public class MapFragment extends SupportMapFragment
                 new LatLng(lat, lng),
                 zoomLevel == null ? 15 : zoomLevel);
         googleMap.animateCamera(cameraUpdate);
+    }
+
+    public Map<String, Marker> getMyMarkers() {
+        if(myMarkers == null)
+            myMarkers = new HashMap<>();
+        return myMarkers;
+    }
+
+    public void AddMarkerForNewUser(String username, String groupname, double latitude, double longitude){
+        Bitmap markerIcon;
+        BitmapDescriptor icon = null;
+
+        markerIcon = UIUtil.decodeScaledBitmapFromDrawableResource(getResources(), R.drawable.map_marker_blue, 128, 128);
+        icon = BitmapDescriptorFactory.fromBitmap(markerIcon);
+
+        if(googleMap != null)
+            getMyMarkers().put(groupname + ":" + username, AddMarker(latitude, longitude, groupname + ":" + username, icon));
+    }
+
+    private Marker AddMarker(double latitude, double longtitude, String title, BitmapDescriptor icon) {
+        MarkerOptions newMarker = new MarkerOptions().position(new LatLng(latitude, longtitude)).title(title).draggable(false);
+        if (icon != null)
+            newMarker.icon(icon);
+        return googleMap.addMarker(newMarker);
+    }
+
+    public void MoveMarker(String username, String groupname, double latitude, double longitude){
+        Marker m = getMyMarkers().get(groupname + ":" + username);
+        if(m != null)
+            m.setPosition(new LatLng(latitude, longitude));
+    }
+
+    public void RemoveMarker(String username, String groupname){
+        Marker m = getMyMarkers().get(groupname + ":" + username);
+        if(m != null)
+            m.remove();
     }
 
     //endregion
