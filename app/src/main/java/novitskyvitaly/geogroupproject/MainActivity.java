@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -18,6 +19,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
@@ -28,6 +30,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
@@ -65,7 +71,7 @@ public class MainActivity extends AppCompatActivity
         MapFragment.OnMapFragmentInteractionListener,
         GeoGroupBroadcastReceiver.IBroadcastReceiverCallback,
         LoginFragment.OnLoginFragmentInteractionListener,
-        CreateJoinGroupFragment.OnCreateJoinGroupInteractionListener, FirebaseUtil.IFirebaseCheckAuthCallback {
+        CreateJoinGroupFragment.OnCreateJoinGroupInteractionListener, FirebaseUtil.IFirebaseCheckAuthCallback, View.OnClickListener {
 
     private final String MY_TAG = "geog_main_act";
     private final static int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
@@ -79,6 +85,15 @@ public class MainActivity extends AppCompatActivity
     Toolbar toolbar;
     ProgressDialog progressDialog = null;
     boolean isSideMenuOpened;
+
+    TextView tv_nav_header_nickname;
+    TextView tv_nav_header_profile;
+    ImageView iv_nav_header_image;
+
+    Button btn_side_menu_groups;
+    Button btn_side_menu_events;
+    Button btn_side_menu_settings;
+    Button btn_side_menu_about;
 
     //endregion
 
@@ -132,6 +147,7 @@ public class MainActivity extends AppCompatActivity
 
         InitToolbar();
         InitDrawerSideMenu();
+        InitSideMenuControls();
 
         SwitchToLoadingFragment();
 //        if (savedInstanceState != null) {
@@ -326,6 +342,39 @@ public class MainActivity extends AppCompatActivity
         actionBarDrawerToggle.syncState();
     }
 
+    private void InitSideMenuControls(){
+        iv_nav_header_image = (ImageView)findViewById(R.id.iv_nav_header_image);
+        tv_nav_header_nickname = (TextView)findViewById(R.id.tv_nav_header_nickname);
+        tv_nav_header_profile = (TextView)findViewById(R.id.tv_nav_header_profile);
+
+        final float scale = getResources().getDisplayMetrics().density;
+        int pxSize = (int)(34 * scale + 0.5f);
+
+        btn_side_menu_groups = (Button)findViewById(R.id.btn_side_menu_groups);
+        Drawable img = getResources().getDrawable(R.drawable.logo_gray_side_menu);
+        img.setBounds(0,0,pxSize,pxSize);
+        btn_side_menu_groups.setCompoundDrawables(img, null, null, null);
+        btn_side_menu_groups.setOnClickListener(this);
+
+        btn_side_menu_events = (Button)findViewById(R.id.btn_side_menu_events);
+        img = getResources().getDrawable(R.drawable.nav_menu_events);
+        img.setBounds(0,0,pxSize,pxSize);
+        btn_side_menu_events.setCompoundDrawables(img, null, null, null);
+        btn_side_menu_events.setOnClickListener(this);
+
+        btn_side_menu_settings = (Button)findViewById(R.id.btn_side_menu_settings);
+        img = getResources().getDrawable(R.drawable.nav_menu_settings);
+        img.setBounds(0,0,pxSize,pxSize);
+        btn_side_menu_settings.setCompoundDrawables(img, null, null, null);
+        btn_side_menu_settings.setOnClickListener(this);
+
+        btn_side_menu_about = (Button)findViewById(R.id.btn_side_menu_about);
+        img = getResources().getDrawable(R.drawable.nav_menu_about);
+        img.setBounds(0,0,pxSize,pxSize);
+        btn_side_menu_about.setCompoundDrawables(img, null, null, null);
+        btn_side_menu_about.setOnClickListener(this);
+    }
+
     //endregion
 
     //region dialogs
@@ -488,9 +537,19 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public void onSuccessCreateJoinGroup() {
+    public void onSuccessCreateJoinGroup(String groupID, String groupPassword, boolean ifSendData) {
         SwitchToMapFragment();
+
+        if(ifSendData && !TextUtils.isEmpty(groupID) && !TextUtils.isEmpty(groupPassword)) {
+            Intent smsIntent = new Intent(Intent.ACTION_SEND);
+            smsIntent.setType("text/plain");
+            //smsIntent.setData(Uri.parse("smsto:"));
+            smsIntent.putExtra(Intent.EXTRA_TEXT, "join: groupID = " + groupID + " and password = " + groupPassword);
+            if(smsIntent.resolveActivity(getPackageManager()) != null)
+                startActivity(smsIntent);
+        }
         //todo: start listening to group
+        //todo: ifSendData => send group data via sms
     }
 
     @Override
@@ -855,6 +914,11 @@ public class MainActivity extends AppCompatActivity
                 }
             };
         return userStatusUpdatesListener;
+    }
+
+    @Override
+    public void onClick(View view) {
+
     }
 
     //endregion

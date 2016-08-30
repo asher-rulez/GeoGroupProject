@@ -23,6 +23,7 @@ public class UserToGroupAssignment implements IFirebaseSavable, Comparable<UserT
     private String userProfileID;
     private Double lastReportedLatitude;
     private Double lastReportedLongitude;
+    private long lastReportedUnixTime;
     private boolean isTracking;
 
     public String getGroupID() {
@@ -63,6 +64,14 @@ public class UserToGroupAssignment implements IFirebaseSavable, Comparable<UserT
 
     public void setIsTracking(boolean tracking) {
         isTracking = tracking;
+    }
+
+    public long getLastReportedUnixTime() {
+        return lastReportedUnixTime;
+    }
+
+    public void setLastReportedUnixTime(long lastReportedUnixTime) {
+        this.lastReportedUnixTime = lastReportedUnixTime;
     }
 
     @Exclude

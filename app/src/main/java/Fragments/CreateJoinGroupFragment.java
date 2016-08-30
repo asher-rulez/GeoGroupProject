@@ -1,5 +1,6 @@
 package Fragments;
 
+import android.app.Dialog;
 import android.content.Context;
 import android.net.Uri;
 import android.opengl.ETC1;
@@ -14,6 +15,7 @@ import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -29,6 +31,7 @@ import com.google.firebase.database.Transaction;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
@@ -192,7 +195,7 @@ public class CreateJoinGroupFragment extends Fragment implements View.OnClickLis
                                     tv_group_name_validation.setText(getString(R.string.validation_message_group_name_unique));
                                     return;
                                 }
-                                SaveNewGroup();
+                                GenerateGroupIDAndCheckUniqueness();
                             }
                             @Override
                             public void onCancelled(DatabaseError databaseError) { }
@@ -242,14 +245,16 @@ public class CreateJoinGroupFragment extends Fragment implements View.OnClickLis
                                         utga.setGroupID(groupName);
                                         utga.setUserProfileID(SharedPreferencesUtil.GetMyProfileID(getContext()));
                                         utga.setIsTracking(true);
+                                        utga.setLastReportedUnixTime(new Date().getTime());
                                         LatLng latLng = SharedPreferencesUtil.GetLastLocationLatLng(getContext());
                                         if(latLng != null){
                                             utga.setLastReportedLatitude(latLng.latitude);
                                             utga.setLastReportedLongitude(latLng.longitude);
                                         }
                                         utgaRef.push().setValue(utga);
+                                        ClearFields();
                                         if(mListener != null)
-                                            mListener.onSuccessCreateJoinGroup();
+                                            mListener.onSuccessCreateJoinGroup(null, null, false);
                                     }
                                     @Override
                                     public void onCancelled(DatabaseError databaseError) { }
@@ -266,10 +271,28 @@ public class CreateJoinGroupFragment extends Fragment implements View.OnClickLis
         }
     }
 
-    private void SaveNewGroup(){
-        String generatedGroupID = GenerateGroupID();
+    private void GenerateGroupIDAndCheckUniqueness(){
+        final String generatedGroupID = GenerateGroupID();
+        FirebaseDatabase.getInstance().getReference()
+                .child(getContext().getString(R.string.firebase_child_groups))
+                .orderByChild(Group.GROUP_KEY_GENERATED_ID)
+                .equalTo(generatedGroupID)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        if(!dataSnapshot.hasChildren())
+                            SaveNewGroup(generatedGroupID);
+                        else GenerateGroupIDAndCheckUniqueness();
+                    }
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+                        databaseError.toException().printStackTrace();
+                    }
+                });
+    }
 
-        Group group = new Group();
+    private void SaveNewGroup(String generatedGroupID){
+        final Group group = new Group();
         group.setGeneratedID(generatedGroupID);
         group.setName(et_group_name_id.getText().toString());
         group.setPassword(et_password.getText().toString());
@@ -279,6 +302,7 @@ public class CreateJoinGroupFragment extends Fragment implements View.OnClickLis
         utga.setGroupID(generatedGroupID);
         utga.setUserProfileID(SharedPreferencesUtil.GetMyProfileID(getContext()));
         utga.setIsTracking(true);
+        utga.setLastReportedUnixTime(new Date().getTime());
         LatLng latLng = SharedPreferencesUtil.GetLastLocationLatLng(getContext());
         if(latLng != null){
             utga.setLastReportedLatitude(latLng.latitude);
@@ -292,14 +316,48 @@ public class CreateJoinGroupFragment extends Fragment implements View.OnClickLis
         FirebaseUtil.SaveDataArrayToFirebase(getContext(), savables, new Stack<DatabaseReference>(), new FirebaseUtil.IFirebaseSaveArrayOfObjectsCallback() {
             @Override
             public void OnSavingFinishedSuccessfully(Stack<DatabaseReference> savedObjectsReferences) {
-                if(mListener != null)
-                    mListener.onSuccessCreateJoinGroup();
+                OnSavingGroupSucceededShowDialog(group);
             }
             @Override
             public void OnSavingError(DatabaseError databaseError) {
                 databaseError.toException().printStackTrace();
             }
         });
+    }
+
+    private void OnSavingGroupSucceededShowDialog(final Group group){
+        final Dialog groupResultDialog = new Dialog(getContext());
+        groupResultDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        groupResultDialog.setContentView(R.layout.group_saved_info_dialog);
+        TextView tv_group_id = (TextView)groupResultDialog.findViewById(R.id.tv_group_saved_result_id);
+        tv_group_id.setText(group.getGeneratedID());
+        TextView tv_group_password = (TextView)groupResultDialog.findViewById(R.id.tv_group_saved_result_password);
+        tv_group_password.setText(group.getPassword());
+
+        Button btn_group_res_send = (Button)groupResultDialog.findViewById(R.id.btn_group_saved_result_send);
+        btn_group_res_send.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(mListener != null)
+                    mListener.onSuccessCreateJoinGroup(group.getGeneratedID(), group.getPassword(), true);
+                groupResultDialog.dismiss();
+            }
+        });
+
+        Button btn_group_res_continue = (Button)groupResultDialog.findViewById(R.id.btn_group_saved_result_continue);
+        btn_group_res_continue.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(mListener != null)
+                    mListener.onSuccessCreateJoinGroup(null, null, false);
+                groupResultDialog.dismiss();
+            }
+        });
+
+        groupResultDialog.show();
+        ClearFields();
+
+        //todo: show dialog with id and password, option to send
     }
 
     TextWatcher nameTextWatcher = new TextWatcher() {
@@ -351,7 +409,7 @@ public class CreateJoinGroupFragment extends Fragment implements View.OnClickLis
 
     public interface OnCreateJoinGroupInteractionListener {
         public void onCancelCreateJoinGroup();
-        public void onSuccessCreateJoinGroup();
+        public void onSuccessCreateJoinGroup(String groupID, String groupPassword, boolean ifSendData);
     }
 
     //endregion

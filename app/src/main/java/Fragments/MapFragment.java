@@ -1,6 +1,7 @@
 package Fragments;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -28,6 +29,8 @@ import android.view.animation.AnimationUtils;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapView;
+import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptor;
@@ -68,7 +71,8 @@ public class MapFragment extends SupportMapFragment
 
     private static View view;
 
-    SupportMapFragment mapFragment;
+    //SupportMapFragment mapFragment;
+    MapView mapView;
     GoogleMap googleMap;
     LatLng lastLocation;
 
@@ -98,7 +102,18 @@ public class MapFragment extends SupportMapFragment
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
+        view = inflater.inflate(R.layout.fragment_map, container, false);
+        mapView = (MapView)view.findViewById(R.id.mv_map);
+        mapView.onCreate(savedInstanceState);
+        mapView.onResume();
+        try{
+            MapsInitializer.initialize(getActivity().getApplicationContext());
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        mapView.getMapAsync(this);
 
+/*
         if (view != null) {
             ViewGroup parent = (ViewGroup) view.getParent();
             if (parent != null)
@@ -109,16 +124,19 @@ public class MapFragment extends SupportMapFragment
         } catch (InflateException e) {
             e.printStackTrace();
         }
+*/
         return view;
     }
 
     @Override
     public void onActivityCreated(Bundle bundle) {
         super.onActivityCreated(bundle);
+/*
         if (googleMap == null) {
             mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.fragment_map);
             if (mapFragment != null) mapFragment.getMapAsync(this);
         }
+*/
         InitFABs();
     }
 
@@ -130,6 +148,25 @@ public class MapFragment extends SupportMapFragment
     @Override
     public void onResume() {
         super.onResume();
+        mapView.onResume();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        mapView.onPause();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        mapView.onDestroy();
+    }
+
+    @Override
+    public void onLowMemory() {
+        super.onLowMemory();
+        mapView.onLowMemory();
     }
 
     @Override
@@ -372,7 +409,24 @@ public class MapFragment extends SupportMapFragment
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.fab_plus:
+                final View.OnClickListener clickListener = this;
                 if (isExpanded) {
+                    fab_x_to_plus_rotate_anim.setAnimationListener(new Animation.AnimationListener() {
+                        @Override
+                        public void onAnimationStart(Animation animation) {
+                            fab_plus.setOnClickListener(null);
+                        }
+
+                        @Override
+                        public void onAnimationEnd(Animation animation) {
+                            fab_plus.setOnClickListener(clickListener);
+                        }
+
+                        @Override
+                        public void onAnimationRepeat(Animation animation) {
+
+                        }
+                    });
                     fab_join_group.startAnimation(fab_collapse_anim);
                     fab_create_group.startAnimation(fab_collapse_anim);
                     fab_plus.startAnimation(fab_x_to_plus_rotate_anim);
@@ -380,6 +434,22 @@ public class MapFragment extends SupportMapFragment
                     fab_create_group.setClickable(false);
                     isExpanded = false;
                 } else {
+                    fab_plus_to_x_rotate_anim.setAnimationListener(new Animation.AnimationListener() {
+                        @Override
+                        public void onAnimationStart(Animation animation) {
+                            fab_plus.setOnClickListener(null);
+                        }
+
+                        @Override
+                        public void onAnimationEnd(Animation animation) {
+                            fab_plus.setOnClickListener(clickListener);
+                        }
+
+                        @Override
+                        public void onAnimationRepeat(Animation animation) {
+
+                        }
+                    });
                     fab_join_group.startAnimation(fab_appear_anim);
                     fab_create_group.startAnimation(fab_appear_anim);
                     fab_plus.startAnimation(fab_plus_to_x_rotate_anim);

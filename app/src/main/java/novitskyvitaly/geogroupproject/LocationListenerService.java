@@ -1,6 +1,8 @@
 package novitskyvitaly.geogroupproject;
 
+import android.app.AlarmManager;
 import android.app.IntentService;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.content.Context;
@@ -18,6 +20,7 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -27,6 +30,7 @@ import com.google.firebase.database.OnDisconnect;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
+import java.util.Calendar;
 import java.util.Date;
 
 import DataModel.UserLocationReport;
@@ -65,14 +69,34 @@ public class LocationListenerService extends Service implements GoogleApiClient.
         if (!mGoogleApiClient.isConnected())
             mGoogleApiClient.connect();
         IsServiceRunning = true;
+
+        Bundle b = new Bundle();
+        b.putString("date", new Date().toString());
+        FirebaseAnalytics.getInstance(this).logEvent("loc_service_start", b);
+
         return Service.START_STICKY_COMPATIBILITY;
     }
 
     @Override
     public void onDestroy() {
-        super.onDestroy();
         mGoogleApiClient.disconnect();
         IsServiceRunning = false;
+
+        Bundle b = new Bundle();
+        b.putString("date", new Date().toString());
+        StackTraceElement[] st = Thread.currentThread().getStackTrace();
+        StringBuilder sb = new StringBuilder();
+        for(int i = 0; i < 10 && i < st.length; i++)
+            sb.append(st[i].toString() + ";\n");
+        b.putString("trace", sb.toString());
+        FirebaseAnalytics.getInstance(this).logEvent("loc_service_stop", b);
+
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(new Date());
+        Intent intent = new Intent(this, LocationListenerService.class);
+        PendingIntent pendingIntent = PendingIntent.getService(this, 0, intent, 0);
+        AlarmManager alarmManager = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
+        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), 30 * 1000, pendingIntent);
     }
 
     @Nullable
@@ -143,8 +167,8 @@ public class LocationListenerService extends Service implements GoogleApiClient.
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-        buildGoogleApiClient();
         IsLocationListenerConnected = false;
+        buildGoogleApiClient();
     }
 
     private void SendLocationUpdatesToFirebase(final Location location){
@@ -164,6 +188,7 @@ public class LocationListenerService extends Service implements GoogleApiClient.
                     }
                     utga.setLastReportedLatitude(location.getLatitude());
                     utga.setLastReportedLongitude(location.getLongitude());
+                    utga.setLastReportedUnixTime(new Date().getTime());
                     FirebaseDatabase.getInstance().getReference()
                             .child(getString(R.string.firebase_user_to_group_assignment))
                             .child(dataSnapshot.getKey())

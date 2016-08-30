@@ -18,12 +18,17 @@
     <string name="validation_message_group_name_unique">You already have group with such name</string>
     <string name="validation_message_already_assigned">You already joined this group</string>
     <string name="validation_message_no_such_group">Group not found</string>
-    <string name="enter_existing_group_name_hint">Enter group name</string>
+    <string name="enter_existing_group_name_hint">Enter group ID</string>
     <string name="enter_existing_group_password_hint">Enter password</string>
     <string name="group_doesnt_exist">Group not found</string>
     <string name="password_incorrect">Password incorrect</string>
     <string name="group_btn_create">Create</string>
     <string name="group_btn_join">Join</string>
+    <string name="create_group_result_dialog_title">Group saved successfully!</string>
+    <string name="create_group_result_dialog_id">Group id:</string>
+    <string name="create_group_result_dialog_password">Password:</string>
+    <string name="create_group_result_btn_send">Send invitation</string>
+    <string name="create_group_result_btn_continue">Continue</string>
 
     <!-- common -->
     <string name="common_ok">Ok</string>
@@ -45,5 +50,12 @@
     <!-- Main activity -->
 
     <string name="snackbar_user_joined_group">User {0} joined group {1}</string>
+
+    <!-- Side menu -->
+
+    <string name="side_menu_btn_my_groups">My groups</string>
+    <string name="side_menu_btn_events_log">Events log</string>
+    <string name="side_menu_btn_settings">Settings</string>
+    <string name="side_menu_btn_about">About</string>
 
 </resources>
