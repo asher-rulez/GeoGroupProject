@@ -2,17 +2,21 @@ package novitskyvitaly.geogroupproject;
 
 import android.app.AlarmManager;
 import android.app.IntentService;
+import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -39,6 +43,7 @@ import Utils.CommonUtil;
 import Utils.FirebaseUtil;
 import Utils.GeoGroupBroadcastReceiver;
 import Utils.SharedPreferencesUtil;
+import Utils.UIUtil;
 
 public class LocationListenerService extends Service implements GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener, LocationListener {
@@ -74,7 +79,26 @@ public class LocationListenerService extends Service implements GoogleApiClient.
         b.putString("date", new Date().toString());
         FirebaseAnalytics.getInstance(this).logEvent("loc_service_start", b);
 
-        return Service.START_STICKY_COMPATIBILITY;
+        ShowNotificationForForeground();
+
+        return Service.START_STICKY;
+    }
+
+    private void ShowNotificationForForeground(){
+        Intent notificationIntent = new Intent(this, MainActivity.class);
+        //notificationIntent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+        Bitmap icon = BitmapFactory.decodeResource(getResources(), R.drawable.logo_colors);
+        Notification notification = new NotificationCompat.Builder(this)
+                .setContentTitle(getString(R.string.location_service_notification_title))
+                .setTicker(getString(R.string.location_service_notification_ticker))
+                .setContentText(getString(R.string.location_service_notification_content))
+                .setSmallIcon(R.drawable.logo_colors)
+                .setLargeIcon(Bitmap.createScaledBitmap(icon, 128, 128, false))
+                .setContentIntent(pendingIntent)
+                .setOngoing(true)
+                .build();
+        startForeground(100, notification);
     }
 
     @Override
@@ -91,12 +115,12 @@ public class LocationListenerService extends Service implements GoogleApiClient.
         b.putString("trace", sb.toString());
         FirebaseAnalytics.getInstance(this).logEvent("loc_service_stop", b);
 
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(new Date());
-        Intent intent = new Intent(this, LocationListenerService.class);
-        PendingIntent pendingIntent = PendingIntent.getService(this, 0, intent, 0);
-        AlarmManager alarmManager = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
-        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), 30 * 1000, pendingIntent);
+//        Calendar cal = Calendar.getInstance();
+//        cal.setTime(new Date());
+//        Intent intent = new Intent(this, LocationListenerService.class);
+//        PendingIntent pendingIntent = PendingIntent.getService(this, 0, intent, 0);
+//        AlarmManager alarmManager = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
+//        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), 30 * 1000, pendingIntent);
     }
 
     @Nullable

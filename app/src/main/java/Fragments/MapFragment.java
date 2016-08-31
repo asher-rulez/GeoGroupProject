@@ -1,6 +1,8 @@
 package Fragments;
 
 import android.Manifest;
+import android.animation.ObjectAnimator;
+import android.animation.TypeEvaluator;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -19,6 +21,8 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
+import android.util.Property;
+import android.util.TypedValue;
 import android.view.InflateException;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -59,6 +63,15 @@ import Utils.SharedPreferencesUtil;
 import Utils.UIUtil;
 import novitskyvitaly.geogroupproject.MainActivity;
 import novitskyvitaly.geogroupproject.R;
+
+import static java.lang.Math.asin;
+import static java.lang.Math.atan2;
+import static java.lang.Math.cos;
+import static java.lang.Math.pow;
+import static java.lang.Math.sin;
+import static java.lang.Math.sqrt;
+import static java.lang.Math.toDegrees;
+import static java.lang.Math.toRadians;
 
 public class MapFragment extends SupportMapFragment
         implements OnMapReadyCallback,
@@ -391,8 +404,23 @@ public class MapFragment extends SupportMapFragment
 
     public void MoveMarker(String username, String groupname, double latitude, double longitude){
         Marker m = getMyMarkers().get(groupname + ":" + username);
-        if(m != null)
-            m.setPosition(new LatLng(latitude, longitude));
+        if(m != null){
+            LatLngInterpolator.Linear interpolator = new LatLngInterpolator.Linear();
+            animateMarker(m, new LatLng(latitude, longitude), interpolator);
+        }
+    }
+
+    static void animateMarker(Marker marker, LatLng newPosition, final LatLngInterpolator interpolator){
+        TypeEvaluator<LatLng> typeEvaluator = new TypeEvaluator<LatLng>() {
+            @Override
+            public LatLng evaluate(float fraction, LatLng startValue, LatLng endValue) {
+                return interpolator.interpolate(fraction, startValue, endValue);
+            }
+        };
+        Property<Marker, LatLng> property = Property.of(Marker.class, LatLng.class, "position");
+        ObjectAnimator animator = ObjectAnimator.ofObject(marker, property, typeEvaluator, newPosition);
+        animator.setDuration(1500);
+        animator.start();
     }
 
     public void RemoveMarker(String username, String groupname){
@@ -527,4 +555,73 @@ public class MapFragment extends SupportMapFragment
 
     //endregion
 
+    interface LatLngInterpolator {
+        public LatLng interpolate(float fraction, LatLng a, LatLng b);
+
+        public class Linear implements LatLngInterpolator {
+            @Override
+            public LatLng interpolate(float fraction, LatLng a, LatLng b) {
+                double lat = (b.latitude - a.latitude) * fraction + a.latitude;
+                double lng = (b.longitude - a.longitude) * fraction + a.longitude;
+                return new LatLng(lat, lng);
+            }
+        }
+
+        public class LinearFixed implements LatLngInterpolator {
+            @Override
+            public LatLng interpolate(float fraction, LatLng a, LatLng b) {
+                double lat = (b.latitude - a.latitude) * fraction + a.latitude;
+                double lngDelta = b.longitude - a.longitude;
+
+                // Take the shortest path across the 180th meridian.
+                if (Math.abs(lngDelta) > 180) {
+                    lngDelta -= Math.signum(lngDelta) * 360;
+                }
+                double lng = lngDelta * fraction + a.longitude;
+                return new LatLng(lat, lng);
+            }
+        }
+
+        public class Spherical implements LatLngInterpolator {
+
+            /* From github.com/googlemaps/android-maps-utils */
+            @Override
+            public LatLng interpolate(float fraction, LatLng from, LatLng to) {
+                // http://en.wikipedia.org/wiki/Slerp
+                double fromLat = toRadians(from.latitude);
+                double fromLng = toRadians(from.longitude);
+                double toLat = toRadians(to.latitude);
+                double toLng = toRadians(to.longitude);
+                double cosFromLat = cos(fromLat);
+                double cosToLat = cos(toLat);
+
+                // Computes Spherical interpolation coefficients.
+                double angle = computeAngleBetween(fromLat, fromLng, toLat, toLng);
+                double sinAngle = sin(angle);
+                if (sinAngle < 1E-6) {
+                    return from;
+                }
+                double a = sin((1 - fraction) * angle) / sinAngle;
+                double b = sin(fraction * angle) / sinAngle;
+
+                // Converts from polar to vector and interpolate.
+                double x = a * cosFromLat * cos(fromLng) + b * cosToLat * cos(toLng);
+                double y = a * cosFromLat * sin(fromLng) + b * cosToLat * sin(toLng);
+                double z = a * sin(fromLat) + b * sin(toLat);
+
+                // Converts interpolated vector back to polar.
+                double lat = atan2(z, sqrt(x * x + y * y));
+                double lng = atan2(y, x);
+                return new LatLng(toDegrees(lat), toDegrees(lng));
+            }
+
+            private double computeAngleBetween(double fromLat, double fromLng, double toLat, double toLng) {
+                // Haversine's formula
+                double dLat = fromLat - toLat;
+                double dLng = fromLng - toLng;
+                return 2 * asin(sqrt(pow(sin(dLat / 2), 2) +
+                        cos(fromLat) * cos(toLat) * pow(sin(dLng / 2), 2)));
+            }
+        }
+    }
 }

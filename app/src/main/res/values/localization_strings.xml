@@ -58,4 +58,10 @@
     <string name="side_menu_btn_settings">Settings</string>
     <string name="side_menu_btn_about">About</string>
 
+    <!-- location report service -->
+
+    <string name="location_service_notification_title">GeoGroup location service running</string>
+    <string name="location_service_notification_ticker">GeoGroup location service running</string>
+    <string name="location_service_notification_content">Click to open</string>
+
 </resources>
