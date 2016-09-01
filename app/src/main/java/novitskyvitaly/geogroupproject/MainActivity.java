@@ -30,6 +30,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
@@ -95,6 +97,16 @@ public class MainActivity extends AppCompatActivity
     Button btn_side_menu_settings;
     Button btn_side_menu_about;
 
+
+    FloatingActionButton fab_plus;
+    FloatingActionButton fab_create_group;
+    FloatingActionButton fab_join_group;
+    boolean isExpanded = false;
+    Animation fab_appear_anim;
+    Animation fab_collapse_anim;
+    Animation fab_plus_to_x_rotate_anim;
+    Animation fab_x_to_plus_rotate_anim;
+
     //endregion
 
     //region fragments variables
@@ -148,6 +160,7 @@ public class MainActivity extends AppCompatActivity
         InitToolbar();
         InitDrawerSideMenu();
         InitSideMenuControls();
+        InitFABs();
 
         SwitchToLoadingFragment();
 //        if (savedInstanceState != null) {
@@ -197,7 +210,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        switch (requestCode){
+        switch (requestCode) {
             case ACTION_CODE_START_SCREEN_ON_STARTUP:
                 CheckAuthorization(this);
                 break;
@@ -229,10 +242,10 @@ public class MainActivity extends AppCompatActivity
 
         super.onStart();
 
-        if(scheduledFragmentID != -1){
-            switch (scheduledFragmentID){
+        if (scheduledFragmentID != -1) {
+            switch (scheduledFragmentID) {
                 case FRAGMENT_ID_LOGIN:
-                    if(scheduledActionCodeForFragmentSwitch == -1){
+                    if (scheduledActionCodeForFragmentSwitch == -1) {
                         Log.e(MY_TAG, "unexpected value of scheduledActionCodeForFragmentSwitch (FRAGMENT_ID_LOGIN)");
                         return;
                     }
@@ -242,7 +255,7 @@ public class MainActivity extends AppCompatActivity
                     SwitchToMapFragment();
                     break;
                 case FRAGMENT_ID_JOINCREATE:
-                    if(scheduledActionCodeForFragmentSwitch == -1){
+                    if (scheduledActionCodeForFragmentSwitch == -1) {
                         Log.e(MY_TAG, "unexpected value of scheduledActionCodeForFragmentSwitch (FRAGMENT_JOINCREATE)");
                         return;
                     }
@@ -342,37 +355,59 @@ public class MainActivity extends AppCompatActivity
         actionBarDrawerToggle.syncState();
     }
 
-    private void InitSideMenuControls(){
-        iv_nav_header_image = (ImageView)findViewById(R.id.iv_nav_header_image);
-        tv_nav_header_nickname = (TextView)findViewById(R.id.tv_nav_header_nickname);
-        tv_nav_header_profile = (TextView)findViewById(R.id.tv_nav_header_profile);
+    private void InitSideMenuControls() {
+        iv_nav_header_image = (ImageView) findViewById(R.id.iv_nav_header_image);
+        tv_nav_header_nickname = (TextView) findViewById(R.id.tv_nav_header_nickname);
+        tv_nav_header_profile = (TextView) findViewById(R.id.tv_nav_header_profile);
 
         final float scale = getResources().getDisplayMetrics().density;
-        int pxSize = (int)(34 * scale + 0.5f);
+        int pxSize = (int) (34 * scale + 0.5f);
 
-        btn_side_menu_groups = (Button)findViewById(R.id.btn_side_menu_groups);
+        btn_side_menu_groups = (Button) findViewById(R.id.btn_side_menu_groups);
         Drawable img = getResources().getDrawable(R.drawable.logo_gray_side_menu);
-        img.setBounds(0,0,pxSize,pxSize);
+        img.setBounds(0, 0, pxSize, pxSize);
         btn_side_menu_groups.setCompoundDrawables(img, null, null, null);
         btn_side_menu_groups.setOnClickListener(this);
 
-        btn_side_menu_events = (Button)findViewById(R.id.btn_side_menu_events);
+        btn_side_menu_events = (Button) findViewById(R.id.btn_side_menu_events);
         img = getResources().getDrawable(R.drawable.nav_menu_events);
-        img.setBounds(0,0,pxSize,pxSize);
+        img.setBounds(0, 0, pxSize, pxSize);
         btn_side_menu_events.setCompoundDrawables(img, null, null, null);
         btn_side_menu_events.setOnClickListener(this);
 
-        btn_side_menu_settings = (Button)findViewById(R.id.btn_side_menu_settings);
+        btn_side_menu_settings = (Button) findViewById(R.id.btn_side_menu_settings);
         img = getResources().getDrawable(R.drawable.nav_menu_settings);
-        img.setBounds(0,0,pxSize,pxSize);
+        img.setBounds(0, 0, pxSize, pxSize);
         btn_side_menu_settings.setCompoundDrawables(img, null, null, null);
         btn_side_menu_settings.setOnClickListener(this);
 
-        btn_side_menu_about = (Button)findViewById(R.id.btn_side_menu_about);
+        btn_side_menu_about = (Button) findViewById(R.id.btn_side_menu_about);
         img = getResources().getDrawable(R.drawable.nav_menu_about);
-        img.setBounds(0,0,pxSize,pxSize);
+        img.setBounds(0, 0, pxSize, pxSize);
         btn_side_menu_about.setCompoundDrawables(img, null, null, null);
         btn_side_menu_about.setOnClickListener(this);
+    }
+
+    private void InitFABs() {
+        fab_plus = (FloatingActionButton) findViewById(R.id.fab_plus);
+        fab_plus.setOnClickListener(this);
+        fab_create_group = (FloatingActionButton) findViewById(R.id.fab_create_group);
+        fab_create_group.setOnClickListener(this);
+        fab_join_group = (FloatingActionButton) findViewById(R.id.fab_join_group);
+        fab_join_group.setOnClickListener(this);
+        fab_appear_anim = AnimationUtils.loadAnimation(this, R.anim.fab_appear);
+        fab_collapse_anim = AnimationUtils.loadAnimation(this, R.anim.fab_collapse);
+        fab_plus_to_x_rotate_anim = AnimationUtils.loadAnimation(this, R.anim.fab_rotate_plus_to_x);
+        fab_x_to_plus_rotate_anim = AnimationUtils.loadAnimation(this, R.anim.fab_rotate_x_to_plus);
+    }
+
+    private void SetFabsVisible(boolean isVisible) {
+        if (fab_plus != null)
+            fab_plus.setVisibility(isVisible ? View.VISIBLE : View.GONE);
+        if (fab_create_group != null)
+            fab_create_group.setVisibility(isVisible && isExpanded ? View.VISIBLE : View.GONE);
+        if (fab_join_group != null)
+            fab_join_group.setVisibility(isVisible && isExpanded ? View.VISIBLE : View.GONE);
     }
 
     //endregion
@@ -443,14 +478,14 @@ public class MainActivity extends AppCompatActivity
 
     //region fragments and callbacks
 
-    private void ScheduleSwitchToFragment(int fragmentIDToSwitch, @Nullable Integer actionCode){
+    private void ScheduleSwitchToFragment(int fragmentIDToSwitch, @Nullable Integer actionCode) {
         scheduledFragmentID = fragmentIDToSwitch;
-        if(actionCode != null)
+        if (actionCode != null)
             scheduledActionCodeForFragmentSwitch = actionCode;
     }
 
     private void SwitchToMapFragment() {
-        if(CommonUtil.GetIsApplicationRunningInForeground(this)){
+        if (CommonUtil.GetIsApplicationRunningInForeground(this)) {
             if (mapFragment == null)
                 mapFragment = new MapFragment();
             FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
@@ -459,13 +494,13 @@ public class MainActivity extends AppCompatActivity
                 getSupportFragmentManager().popBackStackImmediate();
             }
             transaction.commit();
+            SetFabsVisible(true);
             currentFragmentID = FRAGMENT_ID_MAP;
-        }
-        else ScheduleSwitchToFragment(FRAGMENT_ID_MAP, null);
+        } else ScheduleSwitchToFragment(FRAGMENT_ID_MAP, null);
     }
 
     private void SwitchToLoginFragment(int actionCode) {
-        if(CommonUtil.GetIsApplicationRunningInForeground(this)){
+        if (CommonUtil.GetIsApplicationRunningInForeground(this)) {
             if (loginFragment == null)
                 loginFragment = new LoginFragment();
             loginFragment.SetAfterLoginAction(actionCode);
@@ -474,24 +509,24 @@ public class MainActivity extends AppCompatActivity
             transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
             transaction.addToBackStack("login");
             transaction.commit();
+            SetFabsVisible(false);
             currentFragmentID = FRAGMENT_ID_LOGIN;
-        }
-        else ScheduleSwitchToFragment(FRAGMENT_ID_LOGIN, actionCode);
+        } else ScheduleSwitchToFragment(FRAGMENT_ID_LOGIN, actionCode);
     }
 
     private void SwitchToCreateJoinFragment(int actionCode) {
-        if(CommonUtil.GetIsApplicationRunningInForeground(this)){
-        if (createJoinFragment == null)
-            createJoinFragment = new CreateJoinGroupFragment();
-        createJoinFragment.SetAction(actionCode);
-        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-        transaction.replace(R.id.fl_fragments_container, createJoinFragment);
-        transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
-        transaction.addToBackStack("createJoin");
-        transaction.commit();
-        currentFragmentID = FRAGMENT_ID_JOINCREATE;
-        }
-        else ScheduleSwitchToFragment(FRAGMENT_ID_JOINCREATE, actionCode);
+        if (CommonUtil.GetIsApplicationRunningInForeground(this)) {
+            if (createJoinFragment == null)
+                createJoinFragment = new CreateJoinGroupFragment();
+            createJoinFragment.SetAction(actionCode);
+            FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+            transaction.replace(R.id.fl_fragments_container, createJoinFragment);
+            transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+            transaction.addToBackStack("createJoin");
+            transaction.commit();
+            SetFabsVisible(false);
+            currentFragmentID = FRAGMENT_ID_JOINCREATE;
+        } else ScheduleSwitchToFragment(FRAGMENT_ID_JOINCREATE, actionCode);
     }
 
     private void SwitchToLoadingFragment() {
@@ -500,6 +535,7 @@ public class MainActivity extends AppCompatActivity
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.fl_fragments_container, loadingFragment);
         transaction.commit();
+        SetFabsVisible(false);
         currentFragmentID = FRAGMENT_ID_LOADING;
     }
 
@@ -516,12 +552,10 @@ public class MainActivity extends AppCompatActivity
         //todo:continue to action
     }
 
-    @Override
     public void showLoginFragmentForAction(int actionCode) {
         SwitchToLoginFragment(actionCode);
     }
 
-    @Override
     public void openCreateJoinGroupFragment(int actionCode) {
         SwitchToCreateJoinFragment(actionCode);
     }
@@ -540,12 +574,12 @@ public class MainActivity extends AppCompatActivity
     public void onSuccessCreateJoinGroup(String groupID, String groupPassword, boolean ifSendData) {
         SwitchToMapFragment();
 
-        if(ifSendData && !TextUtils.isEmpty(groupID) && !TextUtils.isEmpty(groupPassword)) {
+        if (ifSendData && !TextUtils.isEmpty(groupID) && !TextUtils.isEmpty(groupPassword)) {
             Intent smsIntent = new Intent(Intent.ACTION_SEND);
             smsIntent.setType("text/plain");
             //smsIntent.setData(Uri.parse("smsto:"));
             smsIntent.putExtra(Intent.EXTRA_TEXT, "join: groupID = " + groupID + " and password = " + groupPassword);
-            if(smsIntent.resolveActivity(getPackageManager()) != null)
+            if (smsIntent.resolveActivity(getPackageManager()) != null)
                 startActivity(smsIntent);
         }
         //todo: start listening to group
@@ -556,22 +590,36 @@ public class MainActivity extends AppCompatActivity
     public void onCheckAuthorizationCompleted(int actionCode, boolean isAuthorized, String nickName) {
         switch (actionCode) {
             case ACTION_CODE_START_SCREEN_ON_STARTUP:
-                    if (isAuthorized) {
-                        Log.i(MY_TAG, "authorized, continue to map");
-                        SwitchToMapFragment();
-                        new AsyncTask<Void, Void, Void>() {
-                            @Override
-                            protected Void doInBackground(Void... voids) {
-                                StartTrackingFirebaseDatabase();
-                                return null;
-                            }
-                        }.execute();
-                    } else {
-                        Log.i(MY_TAG, "not authorized, continue to login");
-                        SwitchToLoginFragment(actionCode);
-                    }
+                if (isAuthorized) {
+                    Log.i(MY_TAG, "authorized, continue to map");
+                    SwitchToMapFragment();
+                    new AsyncTask<Void, Void, Void>() {
+                        @Override
+                        protected Void doInBackground(Void... voids) {
+                            StartTrackingFirebaseDatabase();
+                            return null;
+                        }
+                    }.execute();
+                } else {
+                    Log.i(MY_TAG, "not authorized, continue to login");
+                    SwitchToLoginFragment(actionCode);
+                }
+                break;
+            case ACTION_CODE_FOR_CREATE_GROUP:
+            case ACTION_CODE_FOR_JOIN_GROUP:
+                if (isAuthorized)
+                    JoinCreateGroupByActionCodeAndAuthType(actionCode);
+                else SwitchToLoginFragmentForActionCode(actionCode);
                 break;
         }
+    }
+
+    private void JoinCreateGroupByActionCodeAndAuthType(int actionCode) {
+        openCreateJoinGroupFragment(actionCode);
+    }
+
+    private void SwitchToLoginFragmentForActionCode(int actionCode) {
+        showLoginFragmentForAction(actionCode);
     }
 
     //endregion
@@ -590,39 +638,39 @@ public class MainActivity extends AppCompatActivity
     //region runtime data model and event listeners
 
     public Map<String, Group> getMyGroupsDictionary() {
-        if(myGroupsDictionary == null)
+        if (myGroupsDictionary == null)
             myGroupsDictionary = new HashMap<>();
         return myGroupsDictionary;
     }
 
     public Map<String, User> getUsersDictionary() {
-        if(usersDictionary == null)
+        if (usersDictionary == null)
             usersDictionary = new HashMap<>();
         return usersDictionary;
     }
 
     public Map<String, Query> getUsersByGroupKeyQueries() {
-        if(usersByGroupKeyQueries == null)
+        if (usersByGroupKeyQueries == null)
             usersByGroupKeyQueries = new HashMap<>();
         return usersByGroupKeyQueries;
     }
 
-    private void StartTrackingFirebaseDatabase(){
+    private void StartTrackingFirebaseDatabase() {
         myGroupsQuery = FirebaseUtil.GetMyGroupsQuery(this);
         myGroupsQuery.addChildEventListener(getMyGroupsAssignmentsListener());
     }
 
     public ChildEventListener getMyGroupsAssignmentsListener() {
-        if(myGroupsAssignmentsListener == null)
+        if (myGroupsAssignmentsListener == null)
             myGroupsAssignmentsListener = new ChildEventListener() {
                 @Override
                 public void onChildAdded(DataSnapshot dataSnapshot, String s) {
                     final UserToGroupAssignment utga = dataSnapshot.getValue(UserToGroupAssignment.class);
-                    if(utga == null){
+                    if (utga == null) {
                         Log.e(MY_TAG, "utga null: getMyGroupsAssignmentsListener onChildAdded");
                         return;
                     }
-                    if(getMyGroupsDictionary().containsKey(utga.getGroupID())){
+                    if (getMyGroupsDictionary().containsKey(utga.getGroupID())) {
                         Log.e(MY_TAG, "group already exists: getMyGroupsAssignmentsListener onChildAdded");
                         return;
                     }
@@ -632,8 +680,8 @@ public class MainActivity extends AppCompatActivity
                                 @Override
                                 public void onDataChange(DataSnapshot dataSnapshot) {
                                     int i = 0;
-                                    for(DataSnapshot ds : dataSnapshot.getChildren()){
-                                        if(i > 0){
+                                    for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                                        if (i > 0) {
                                             Log.e(MY_TAG, "unexpected amount of groups got by one key!");
                                             return;
                                         }
@@ -666,11 +714,11 @@ public class MainActivity extends AppCompatActivity
                 @Override
                 public void onChildRemoved(DataSnapshot dataSnapshot) {
                     UserToGroupAssignment utga = dataSnapshot.getValue(UserToGroupAssignment.class);
-                    if(utga == null){
+                    if (utga == null) {
                         Log.e(MY_TAG, "group null: getMyGroupsAssignmentsListener onChildRemoved");
                         return;
                     }
-                    if(!getMyGroupsDictionary().containsKey(utga.getGroupID())){
+                    if (!getMyGroupsDictionary().containsKey(utga.getGroupID())) {
                         Log.e(MY_TAG, "group doesn't exist in myGroups: getMyGroupsAssignmentsListener onChildRemoved");
                         return;
                     }
@@ -679,7 +727,7 @@ public class MainActivity extends AppCompatActivity
                     getMyGroupsDictionary().remove(utga.getGroupID());
                     NotifyGroupRemoved(group);
                     Query q = getUsersByGroupKeyQueries().get(group.getGeneratedID());
-                    if(q == null){
+                    if (q == null) {
                         Log.e(MY_TAG, "users by group key query not found");
                         return;
                     }
@@ -699,33 +747,34 @@ public class MainActivity extends AppCompatActivity
         return myGroupsAssignmentsListener;
     }
 
-    private void NotifyGroupAdded(Group group){
+    private void NotifyGroupAdded(Group group) {
         Log.i(MY_TAG, "notified about group added to myGroups");
     }
-    private void NotifyGroupRemoved(Group group){
+
+    private void NotifyGroupRemoved(Group group) {
         Log.i(MY_TAG, "notified about group removed");
     }
 
     public ChildEventListener getUserAssignmentsToMyGroupsListener() {
-        if(userAssignmentsToMyGroupsListener == null)
+        if (userAssignmentsToMyGroupsListener == null)
             userAssignmentsToMyGroupsListener = new ChildEventListener() {
                 @Override
                 public void onChildAdded(DataSnapshot dataSnapshot, String s) {
                     final UserToGroupAssignment utga = dataSnapshot.getValue(UserToGroupAssignment.class);
-                    if(utga == null){
+                    if (utga == null) {
                         Log.e(MY_TAG, "utga null: getUserAssignmentsToMyGroupsListener onChildAdded");
                         return;
                     }
-                    if(!getMyGroupsDictionary().containsKey(utga.getGroupID())){
+                    if (!getMyGroupsDictionary().containsKey(utga.getGroupID())) {
                         Log.e(MY_TAG, "group not found: getUserAssignmentsToMyGroupsListener onChildAdded");
                         return;
                     }
-                    if(utga.getUserProfileID().equals(SharedPreferencesUtil.GetMyProfileID(getApplicationContext())))
+                    if (utga.getUserProfileID().equals(SharedPreferencesUtil.GetMyProfileID(getApplicationContext())))
                         return; // my own assignment
-                    if(!LocationListenerService.IsServiceRunning)
+                    if (!LocationListenerService.IsServiceRunning)
                         StartLocationReportService();
                     Log.i(MY_TAG, "got user (" + utga.getUserProfileID() + ") joined group: " + utga.getGroupID());
-                    if(getMyGroupsDictionary().get(utga.getGroupID()).getUserAssignments().containsKey(utga.getUserProfileID())){
+                    if (getMyGroupsDictionary().get(utga.getGroupID()).getUserAssignments().containsKey(utga.getUserProfileID())) {
                         Log.e(MY_TAG, "user assignment already exists in this group");
                         //todo: can go to onChildChanged algorythm or do nothing
                         return;
@@ -736,17 +785,17 @@ public class MainActivity extends AppCompatActivity
                 @Override
                 public void onChildChanged(DataSnapshot dataSnapshot, String s) {
                     final UserToGroupAssignment utga = dataSnapshot.getValue(UserToGroupAssignment.class);
-                    if(utga == null){
+                    if (utga == null) {
                         Log.e(MY_TAG, "utga null: getUserAssignmentsToMyGroupsListener onChildAdded");
                         return;
                     }
-                    if(!getMyGroupsDictionary().containsKey(utga.getGroupID())){
+                    if (!getMyGroupsDictionary().containsKey(utga.getGroupID())) {
                         Log.e(MY_TAG, "group not found: getUserAssignmentsToMyGroupsListener onChildAdded");
                         return;
                     }
-                    if(utga.getUserProfileID().equals(SharedPreferencesUtil.GetMyProfileID(getApplicationContext())))
+                    if (utga.getUserProfileID().equals(SharedPreferencesUtil.GetMyProfileID(getApplicationContext())))
                         return; // my own assignment
-                    if(!getMyGroupsDictionary().get(utga.getGroupID()).getUserAssignments().containsKey(utga.getUserProfileID())){
+                    if (!getMyGroupsDictionary().get(utga.getGroupID()).getUserAssignments().containsKey(utga.getUserProfileID())) {
                         HandleUserJoinedGroup(utga);
                     } else {
                         getMyGroupsDictionary().get(utga.getGroupID()).getUserAssignments().remove(utga.getUserProfileID());
@@ -758,18 +807,18 @@ public class MainActivity extends AppCompatActivity
                 @Override
                 public void onChildRemoved(DataSnapshot dataSnapshot) {
                     final UserToGroupAssignment utga = dataSnapshot.getValue(UserToGroupAssignment.class);
-                    if(utga == null){
+                    if (utga == null) {
                         Log.e(MY_TAG, "utga null: getUserAssignmentsToMyGroupsListener onChildAdded");
                         return;
                     }
-                    if(!getMyGroupsDictionary().containsKey(utga.getGroupID())){
+                    if (!getMyGroupsDictionary().containsKey(utga.getGroupID())) {
                         Log.e(MY_TAG, "group not found: getUserAssignmentsToMyGroupsListener onChildAdded");
                         return;
                     }
                     getMyGroupsDictionary().get(utga.getGroupID()).getUserAssignments().remove(utga.getUserProfileID());
-                    if(!utga.getUserProfileID().equals(SharedPreferencesUtil.GetMyProfileID(getApplicationContext())))
+                    if (!utga.getUserProfileID().equals(SharedPreferencesUtil.GetMyProfileID(getApplicationContext())))
                         NotifyUserLeftGroup(utga);
-                    if(!CheckIfThereAreGroupsWithUsers())
+                    if (!CheckIfThereAreGroupsWithUsers())
                         SharedPreferencesUtil.SetShouldStopService(getApplicationContext(), true);
                 }
 
@@ -786,17 +835,17 @@ public class MainActivity extends AppCompatActivity
         return userAssignmentsToMyGroupsListener;
     }
 
-    private boolean CheckIfThereAreGroupsWithUsers(){
-        for(String groupKey : getMyGroupsDictionary().keySet()){
-            if(getMyGroupsDictionary().get(groupKey).getUserAssignments().size() > 0)
+    private boolean CheckIfThereAreGroupsWithUsers() {
+        for (String groupKey : getMyGroupsDictionary().keySet()) {
+            if (getMyGroupsDictionary().get(groupKey).getUserAssignments().size() > 0)
                 return true;
         }
         return false;
     }
 
-    private void HandleUserJoinedGroup(final UserToGroupAssignment utga){
+    private void HandleUserJoinedGroup(final UserToGroupAssignment utga) {
         getMyGroupsDictionary().get(utga.getGroupID()).getUserAssignments().put(utga.getUserProfileID(), utga);
-        if(getUsersDictionary().containsKey(utga.getUserProfileID()))
+        if (getUsersDictionary().containsKey(utga.getUserProfileID()))
             NotifyUserJoinedGroup(utga);
         else {
             FirebaseUtil.GetQueryForSingleUserByUserProfileID(getApplicationContext(), utga.getUserProfileID())
@@ -804,8 +853,8 @@ public class MainActivity extends AppCompatActivity
                         @Override
                         public void onDataChange(DataSnapshot dataSnapshot) {
                             int i = 0;
-                            for(DataSnapshot ds : dataSnapshot.getChildren()){
-                                if(i > 0){
+                            for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                                if (i > 0) {
                                     Log.e(MY_TAG, "unexpected amount of users got by one profileID!");
                                     return;
                                 }
@@ -825,29 +874,29 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    private void NotifyUserJoinedGroup(UserToGroupAssignment utga){
+    private void NotifyUserJoinedGroup(UserToGroupAssignment utga) {
         Log.i(MY_TAG, "notified user joined group");
         User user = getUsersDictionary().get(utga.getUserProfileID());
         Group group = getMyGroupsDictionary().get(utga.getGroupID());
         Snackbar.make(toolbar,
                 getString(R.string.snackbar_user_joined_group).replace("{0}", user.getUsername()).replace("{1}", group.getName()),
                 Snackbar.LENGTH_SHORT).show();
-        if(mapFragment != null)//todo: add check if I'm tracking this group
+        if (mapFragment != null)//todo: add check if I'm tracking this group
             mapFragment.AddMarkerForNewUser(user.getUsername(), group.getName(), utga.getLastReportedLatitude(), utga.getLastReportedLongitude());
     }
 
-    private void NotifyUserUpdatedLocation(UserToGroupAssignment utga){
+    private void NotifyUserUpdatedLocation(UserToGroupAssignment utga) {
         Log.i(MY_TAG, "notified user updated location");
-        if(mapFragment != null) {//todo: add check if I'm tracking this group
+        if (mapFragment != null) {//todo: add check if I'm tracking this group
             User user = getUsersDictionary().get(utga.getUserProfileID());
             Group group = getMyGroupsDictionary().get(utga.getGroupID());
             mapFragment.MoveMarker(user.getUsername(), group.getName(), utga.getLastReportedLatitude(), utga.getLastReportedLongitude());
         }
     }
 
-    private void NotifyUserLeftGroup(UserToGroupAssignment utga){
+    private void NotifyUserLeftGroup(UserToGroupAssignment utga) {
         Log.i(MY_TAG, "notified user left group");
-        if(mapFragment != null){
+        if (mapFragment != null) {
             User user = getUsersDictionary().get(utga.getUserProfileID());
             Group group = getMyGroupsDictionary().get(utga.getGroupID());
             mapFragment.RemoveMarker(user.getUsername(), group.getName());
@@ -855,7 +904,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     public ChildEventListener getCommonEventsOfMyGroupsListener() {
-        if(commonEventsOfMyGroupsListener == null)
+        if (commonEventsOfMyGroupsListener == null)
             commonEventsOfMyGroupsListener = new ChildEventListener() {
                 @Override
                 public void onChildAdded(DataSnapshot dataSnapshot, String s) {
@@ -886,7 +935,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     public ChildEventListener getUserStatusUpdatesListener() {
-        if(userStatusUpdatesListener == null)
+        if (userStatusUpdatesListener == null)
             userStatusUpdatesListener = new ChildEventListener() {
                 @Override
                 public void onChildAdded(DataSnapshot dataSnapshot, String s) {
@@ -918,7 +967,65 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.fab_plus:
+                final View.OnClickListener clickListener = this;
+                if (isExpanded) {
+                    fab_x_to_plus_rotate_anim.setAnimationListener(new Animation.AnimationListener() {
+                        @Override
+                        public void onAnimationStart(Animation animation) {
+                            fab_plus.setOnClickListener(null);
+                        }
 
+                        @Override
+                        public void onAnimationEnd(Animation animation) {
+                            fab_plus.setOnClickListener(clickListener);
+                        }
+
+                        @Override
+                        public void onAnimationRepeat(Animation animation) {
+
+                        }
+                    });
+                    fab_join_group.startAnimation(fab_collapse_anim);
+                    fab_create_group.startAnimation(fab_collapse_anim);
+                    fab_plus.startAnimation(fab_x_to_plus_rotate_anim);
+                    fab_join_group.setClickable(false);
+                    fab_create_group.setClickable(false);
+                    isExpanded = false;
+                } else {
+                    fab_plus_to_x_rotate_anim.setAnimationListener(new Animation.AnimationListener() {
+                        @Override
+                        public void onAnimationStart(Animation animation) {
+                            fab_plus.setOnClickListener(null);
+                        }
+
+                        @Override
+                        public void onAnimationEnd(Animation animation) {
+                            fab_plus.setOnClickListener(clickListener);
+                        }
+
+                        @Override
+                        public void onAnimationRepeat(Animation animation) {
+
+                        }
+                    });
+                    fab_join_group.startAnimation(fab_appear_anim);
+                    fab_create_group.startAnimation(fab_appear_anim);
+                    fab_plus.startAnimation(fab_plus_to_x_rotate_anim);
+                    fab_join_group.setClickable(true);
+                    fab_create_group.setClickable(true);
+                    isExpanded = true;
+                }
+                break;
+            case R.id.fab_create_group:
+                FirebaseUtil.CheckAuthForActionCode(this, ACTION_CODE_FOR_CREATE_GROUP, this);
+                break;
+            case R.id.fab_join_group:
+                FirebaseUtil.CheckAuthForActionCode(this, ACTION_CODE_FOR_JOIN_GROUP, this);
+                break;
+
+        }
     }
 
     //endregion

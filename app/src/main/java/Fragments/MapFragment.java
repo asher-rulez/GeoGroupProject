@@ -96,15 +96,6 @@ public class MapFragment extends SupportMapFragment
 
     private static final int REQUEST_CODE_ASK_LOCATION_PERMISSION = 10;
 
-    FloatingActionButton fab_plus;
-    FloatingActionButton fab_create_group;
-    FloatingActionButton fab_join_group;
-    boolean isExpanded = false;
-    Animation fab_appear_anim;
-    Animation fab_collapse_anim;
-    Animation fab_plus_to_x_rotate_anim;
-    Animation fab_x_to_plus_rotate_anim;
-
     public MapFragment() {
         // Required empty public constructor
     }
@@ -144,13 +135,6 @@ public class MapFragment extends SupportMapFragment
     @Override
     public void onActivityCreated(Bundle bundle) {
         super.onActivityCreated(bundle);
-/*
-        if (googleMap == null) {
-            mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.fragment_map);
-            if (mapFragment != null) mapFragment.getMapAsync(this);
-        }
-*/
-        InitFABs();
     }
 
     @Override
@@ -203,19 +187,6 @@ public class MapFragment extends SupportMapFragment
     //endregion
 
     //region Controls init
-
-    private void InitFABs() {
-        fab_plus = (FloatingActionButton) getView().findViewById(R.id.fab_plus);
-        fab_plus.setOnClickListener(this);
-        fab_create_group = (FloatingActionButton) getView().findViewById(R.id.fab_create_group);
-        fab_create_group.setOnClickListener(this);
-        fab_join_group = (FloatingActionButton) getView().findViewById(R.id.fab_join_group);
-        fab_join_group.setOnClickListener(this);
-        fab_appear_anim = AnimationUtils.loadAnimation(getContext(), R.anim.fab_appear);
-        fab_collapse_anim = AnimationUtils.loadAnimation(getContext(), R.anim.fab_collapse);
-        fab_plus_to_x_rotate_anim = AnimationUtils.loadAnimation(getContext(), R.anim.fab_rotate_plus_to_x);
-        fab_x_to_plus_rotate_anim = AnimationUtils.loadAnimation(getContext(), R.anim.fab_rotate_x_to_plus);
-    }
 
     //endregion
 
@@ -435,64 +406,6 @@ public class MapFragment extends SupportMapFragment
 
     @Override
     public void onClick(View view) {
-        switch (view.getId()) {
-            case R.id.fab_plus:
-                final View.OnClickListener clickListener = this;
-                if (isExpanded) {
-                    fab_x_to_plus_rotate_anim.setAnimationListener(new Animation.AnimationListener() {
-                        @Override
-                        public void onAnimationStart(Animation animation) {
-                            fab_plus.setOnClickListener(null);
-                        }
-
-                        @Override
-                        public void onAnimationEnd(Animation animation) {
-                            fab_plus.setOnClickListener(clickListener);
-                        }
-
-                        @Override
-                        public void onAnimationRepeat(Animation animation) {
-
-                        }
-                    });
-                    fab_join_group.startAnimation(fab_collapse_anim);
-                    fab_create_group.startAnimation(fab_collapse_anim);
-                    fab_plus.startAnimation(fab_x_to_plus_rotate_anim);
-                    fab_join_group.setClickable(false);
-                    fab_create_group.setClickable(false);
-                    isExpanded = false;
-                } else {
-                    fab_plus_to_x_rotate_anim.setAnimationListener(new Animation.AnimationListener() {
-                        @Override
-                        public void onAnimationStart(Animation animation) {
-                            fab_plus.setOnClickListener(null);
-                        }
-
-                        @Override
-                        public void onAnimationEnd(Animation animation) {
-                            fab_plus.setOnClickListener(clickListener);
-                        }
-
-                        @Override
-                        public void onAnimationRepeat(Animation animation) {
-
-                        }
-                    });
-                    fab_join_group.startAnimation(fab_appear_anim);
-                    fab_create_group.startAnimation(fab_appear_anim);
-                    fab_plus.startAnimation(fab_plus_to_x_rotate_anim);
-                    fab_join_group.setClickable(true);
-                    fab_create_group.setClickable(true);
-                    isExpanded = true;
-                }
-                break;
-            case R.id.fab_create_group:
-                FirebaseUtil.CheckAuthForActionCode(getContext(), MainActivity.ACTION_CODE_FOR_CREATE_GROUP, this);
-                break;
-            case R.id.fab_join_group:
-                FirebaseUtil.CheckAuthForActionCode(getContext(), MainActivity.ACTION_CODE_FOR_JOIN_GROUP, this);
-                break;
-        }
     }
 
     @Override
@@ -508,12 +421,6 @@ public class MapFragment extends SupportMapFragment
     //endregion
 
     //region Join/create group
-
-    private void JoinCreateGroupByActionCodeAndAuthType(int actionCode) {
-        //Log.i(MY_TAG, "JoinCreateGroupByActionCodeAndAuthType");
-        if (mListener != null)
-            mListener.openCreateJoinGroupFragment(actionCode);
-    }
 
     //endregion
 
@@ -533,23 +440,15 @@ public class MapFragment extends SupportMapFragment
 
     //region Interaction with parent activity
 
-    private void SwitchToLoginFragmentForActionCode(int actionCode) {
-        Log.i(MY_TAG, "SwitchToLoginFragmentForActionCode");
-        mListener.showLoginFragmentForAction(actionCode);
-    }
-
     @Override
     public void onCheckAuthorizationCompleted(int actionCode, boolean isAuthorized, String nickName) {
-        if (isAuthorized)
-            JoinCreateGroupByActionCodeAndAuthType(actionCode);
-        else SwitchToLoginFragmentForActionCode(actionCode);
     }
 
     public interface OnMapFragmentInteractionListener {
-        void showLoginFragmentForAction(int actionCode);
-
-        void openCreateJoinGroupFragment(int actionCode);
-
+//        void showLoginFragmentForAction(int actionCode);
+//
+//        void openCreateJoinGroupFragment(int actionCode);
+//
         void onMapFinishedLoading();
     }
 
