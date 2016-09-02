@@ -2,12 +2,14 @@ package DataModel;
 
 import com.google.firebase.database.Exclude;
 
+import java.io.Serializable;
+
 import Utils.FirebaseUtil;
 
 /**
  * Created by Asher on 19.08.2016.
  */
-public class User implements IFirebaseSavable {
+public class User implements IFirebaseSavable, Serializable {
     private final String MY_TAG = "geog_user";
 
     public static final String USER_KEY_USERNAME = "username";

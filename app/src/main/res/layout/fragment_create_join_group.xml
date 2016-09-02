@@ -1,94 +1,103 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:fillViewport="true"
     tools:context="Fragments.CreateJoinGroupFragment">
 
-    <TextView
-        android:id="@+id/tv_create_join_group_fragment_title"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_alignParentTop="true"
-        android:layout_marginTop="50dp"
-        android:textSize="35dp"/>
-
-    <LinearLayout
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_centerVertical="true"
-        android:layout_marginRight="25dp"
-        android:layout_marginLeft="25dp"
-        android:orientation="vertical">
-
-        <android.support.design.widget.TextInputLayout
-            android:id="@+id/til_group_name_or_id"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize">
-
-            <EditText
-                android:id="@+id/et_group_name_or_id"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:ems="10"
-                android:inputType="textShortMessage">
-                <!--<requestFocus />-->
-            </EditText>
-
-        </android.support.design.widget.TextInputLayout>
+        android:layout_height="match_parent">
 
         <TextView
-            android:id="@+id/tv_group_name_validation"
+            android:id="@+id/tv_create_join_group_fragment_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="50dp"
+            android:textSize="35dp" />
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center"/>
+            android:layout_centerHorizontal="true"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="25dp"
+            android:layout_marginRight="25dp"
+            android:orientation="vertical">
 
-        <android.support.design.widget.TextInputLayout
-            android:id="@+id/til_group_password"
+            <android.support.design.widget.TextInputLayout
+                android:id="@+id/til_group_name_or_id"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize">
+
+                <EditText
+                    android:id="@+id/et_group_name_or_id"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:ems="10"
+                    android:inputType="textShortMessage">
+                    <!--<requestFocus />-->
+                </EditText>
+
+            </android.support.design.widget.TextInputLayout>
+
+            <TextView
+                android:id="@+id/tv_group_name_validation"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center" />
+
+            <android.support.design.widget.TextInputLayout
+                android:id="@+id/til_group_password"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:layout_marginTop="16dp">
+
+                <EditText
+                    android:id="@+id/et_group_password"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:ems="10"
+                    android:inputType="textPassword">
+                    <!--<requestFocus />-->
+                </EditText>
+
+            </android.support.design.widget.TextInputLayout>
+
+            <TextView
+                android:id="@+id/tv_password_validation"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center" />
+
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:layout_marginTop="16dp">
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:orientation="horizontal">
 
-            <EditText
-                android:id="@+id/et_group_password"
-                android:layout_width="match_parent"
+            <Button
+                android:id="@+id/btn_group_ok"
+                style="@style/Widget.AppCompat.Button.Borderless"
+                android:layout_width="0dip"
                 android:layout_height="match_parent"
-                android:ems="10"
-                android:inputType="textPassword">
-                <!--<requestFocus />-->
-            </EditText>
+                android:layout_weight="1" />
 
-        </android.support.design.widget.TextInputLayout>
+            <Button
+                android:id="@+id/btn_group_cancel"
+                style="@style/Widget.AppCompat.Button.Borderless"
+                android:layout_width="0dip"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="@string/common_cancel" />
+        </LinearLayout>
 
-        <TextView
-            android:id="@+id/tv_password_validation"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"/>
+    </RelativeLayout>
 
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:orientation="horizontal"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true">
-        <Button
-            android:id="@+id/btn_group_ok"
-            android:layout_width="0dip"
-            android:layout_weight="1"
-            android:layout_height="match_parent"
-            style="@style/Widget.AppCompat.Button.Borderless"/>
-        <Button
-            android:id="@+id/btn_group_cancel"
-            android:layout_width="0dip"
-            android:layout_weight="1"
-            android:layout_height="match_parent"
-            android:text="@string/common_cancel"
-            style="@style/Widget.AppCompat.Button.Borderless"/>
-    </LinearLayout>
-
-</RelativeLayout>
+</ScrollView>

@@ -2,12 +2,14 @@ package DataModel;
 
 import com.google.firebase.database.Exclude;
 
+import java.io.Serializable;
+
 import Utils.FirebaseUtil;
 
 /**
  * Created by Asher on 19.08.2016.
  */
-public class UserToGroupAssignment implements IFirebaseSavable, Comparable<UserToGroupAssignment> {
+public class UserToGroupAssignment implements IFirebaseSavable, Comparable<UserToGroupAssignment>, Serializable {
     private final String MY_TAG = "geog_user_to_group";
 
     public final static String UTGA_KEY_GROUP_ID = "groupID";
@@ -106,5 +108,29 @@ public class UserToGroupAssignment implements IFirebaseSavable, Comparable<UserT
     @Exclude
     public void setUserStatus(UserStatusUpdate userStatus) {
         this.userStatus = userStatus;
+    }
+
+    private Group group;
+
+    @Exclude
+    public Group getGroup() {
+        return group;
+    }
+
+    @Exclude
+    public void setGroup(Group group) {
+        this.group = group;
+    }
+
+    private User user;
+
+    @Exclude
+    public User getUser() {
+        return user;
+    }
+
+    @Exclude
+    public void setUser(User user) {
+        this.user = user;
     }
 }

@@ -51,6 +51,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -205,18 +206,33 @@ public class MapFragment extends SupportMapFragment
         } else SetMapProperties();
 
         if(getMyMarkers().size() > 0){
-            Bitmap markerIcon;
-            BitmapDescriptor icon = null;
-
-            markerIcon = UIUtil.decodeScaledBitmapFromDrawableResource(getResources(), R.drawable.map_marker_blue, 128, 128);
-            icon = BitmapDescriptorFactory.fromBitmap(markerIcon);
-
             for(String key : getMyMarkers().keySet()){
                 Marker prevMarker = getMyMarkers().get(key);
                 prevMarker.remove();
                 getMyMarkers().remove(key);
-                getMyMarkers().put(key, AddMarker(prevMarker.getPosition().latitude, prevMarker.getPosition().longitude, prevMarker.getTitle(), icon));
             }
+        }
+
+        Bitmap markerIcon;
+        BitmapDescriptor icon = null;
+        markerIcon = UIUtil.decodeScaledBitmapFromDrawableResource(getResources(), R.drawable.map_marker_blue, 128, 128);
+        icon = BitmapDescriptorFactory.fromBitmap(markerIcon);
+
+        ArrayList<UserToGroupAssignment> utgas = mListener.getUTGAsForShowing();
+        for (UserToGroupAssignment utga : utgas){
+//            String groupID = utga.getGroupID();
+//            String userProfileID = utga.getUserProfileID();
+//            double lat = utga.getLastReportedLatitude().doubleValue();
+//            double lng = utga.getLastReportedLongitude().doubleValue();
+//            Group g = utga.getGroup();
+//            String groupName = g.getName();
+//            User u = utga.getUser();
+//            String userName = u.getUsername();
+//            Marker m = AddMarker(lat, lng, groupName + ":" + userName, icon);
+//            getMyMarkers().put(groupID + ":" + userProfileID, m);
+            getMyMarkers().put(utga.getGroupID() + ":" + utga.getUserProfileID(),
+                    AddMarker(utga.getLastReportedLatitude(), utga.getLastReportedLongitude(),
+                            utga.getGroup().getName() + ":" + utga.getUser().getUsername(), icon));
         }
     }
 
@@ -474,6 +490,8 @@ public class MapFragment extends SupportMapFragment
         void showFabsForMap();
 
         void hideFabsOnMapPaused();
+
+        ArrayList<UserToGroupAssignment> getUTGAsForShowing();
     }
 
     //endregion

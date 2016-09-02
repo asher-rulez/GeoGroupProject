@@ -4,6 +4,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.Exclude;
 import com.google.firebase.database.Query;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,7 +14,7 @@ import Utils.FirebaseUtil;
 /**
  * Created by Asher on 19.08.2016.
  */
-public class Group implements IFirebaseSavable, Comparable<Group> {
+public class Group implements IFirebaseSavable, Comparable<Group>, Serializable {
     private final String MY_TAG = "geog_group";
 
     public static final String GROUP_KEY_NAME = "name";

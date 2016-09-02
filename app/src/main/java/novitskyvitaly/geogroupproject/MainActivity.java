@@ -13,6 +13,7 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.PersistableBundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.CoordinatorLayout;
@@ -140,14 +141,23 @@ public class MainActivity extends AppCompatActivity
 
     Query myGroupsQuery;
 
-    Map<String, Group> myGroupsDictionary;
-    Map<String, User> usersDictionary;
-    Map<String, Query> usersByGroupKeyQueries;
+    HashMap<String, Group> myGroupsDictionary;
+    HashMap<String, User> usersDictionary;
+    HashMap<String, Query> usersByGroupKeyQueries;
 
     ChildEventListener myGroupsAssignmentsListener;
     ChildEventListener userAssignmentsToMyGroupsListener;
     ChildEventListener commonEventsOfMyGroupsListener;
     ChildEventListener userStatusUpdatesListener;
+
+    //endregion
+
+    //region constants - saved instance state
+
+    private final String SAVED_INSTANCE_STATE_KEY_GROUPS_DICTIONARY = "group";
+    private final String SAVED_INSTANCE_STATE_KEY_USERS_DICTIONARY = "users";
+    private final String SAVED_INSTANCE_STATE_KEY_USERS_BY_GROUP_KEY_QUERIES = "UBG_queries";
+    private final String SAVED_INSTANCE_STATE_KEY_MY_GROUPS_QUERY = "groups_query";
 
     //endregion
 
@@ -163,32 +173,29 @@ public class MainActivity extends AppCompatActivity
         InitSideMenuControls();
         InitFABs();
 
-        SwitchToLoadingFragment();
-//        if (savedInstanceState != null) {
-//        }
-
-        //final FirebaseUtil.IFirebaseCheckAuthCallback authListener = this;
-        //geoGroupFirebaseRef = FirebaseDatabase.getInstance().getReference();
-        if (SharedPreferencesUtil.GetFCMTokenFromSharedPreferences(this).equals(""))
-            new AsyncTask<Void, Void, Void>() {
-                @Override
-                protected Void doInBackground(Void... voids) {
-                    String token = FirebaseInstanceId.getInstance().getToken();
-                    if (token != null) {
-                        Log.i(MY_TAG, "got token: " + token);
-                        SharedPreferencesUtil.SaveFCMTokenInSharedPreferences(getApplicationContext(), token);
+        if (savedInstanceState == null) {
+            SwitchToLoadingFragment();
+            if (SharedPreferencesUtil.GetFCMTokenFromSharedPreferences(this).equals(""))
+                new AsyncTask<Void, Void, Void>() {
+                    @Override
+                    protected Void doInBackground(Void... voids) {
+                        String token = FirebaseInstanceId.getInstance().getToken();
+                        if (token != null) {
+                            Log.i(MY_TAG, "got token: " + token);
+                            SharedPreferencesUtil.SaveFCMTokenInSharedPreferences(getApplicationContext(), token);
+                        }
+                        return null;
                     }
-                    return null;
-                }
 
-                @Override
-                protected void onPostExecute(Void aVoid) {
-                    super.onPostExecute(aVoid);
-                    RequestPermissionsBeforeCheckingAuth();
-                    //CheckAuthorization(authListener);
-                }
-            }.execute();
-        else RequestPermissionsBeforeCheckingAuth();//CheckAuthorization(authListener);
+                    @Override
+                    protected void onPostExecute(Void aVoid) {
+                        super.onPostExecute(aVoid);
+                        RequestPermissionsBeforeCheckingAuth();
+                        //CheckAuthorization(authListener);
+                    }
+                }.execute();
+            else RequestPermissionsBeforeCheckingAuth();//CheckAuthorization(authListener);
+        }
     }
 
     private void CheckAuthorization(final FirebaseUtil.IFirebaseCheckAuthCallback callbackListener) {
@@ -287,7 +294,7 @@ public class MainActivity extends AppCompatActivity
     protected void onStop() {
         CommonUtil.SetIsApplicationRunningInForeground(this, false);
         SharedPreferencesUtil.ClearLastLocationSavedDateTimeInMillis(this);
-        if (broadcastReceiver == null) {
+        if (broadcastReceiver != null) {
             unregisterReceiver(broadcastReceiver);
             broadcastReceiver = null;
         }
@@ -324,6 +331,34 @@ public class MainActivity extends AppCompatActivity
                 super.onBackPressed();
             }
         }
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        outState.putSerializable(SAVED_INSTANCE_STATE_KEY_GROUPS_DICTIONARY, getMyGroupsDictionary());
+        outState.putSerializable(SAVED_INSTANCE_STATE_KEY_USERS_DICTIONARY, getUsersDictionary());
+        outState.putSerializable(SAVED_INSTANCE_STATE_KEY_USERS_BY_GROUP_KEY_QUERIES, getUsersByGroupKeyQueries());
+        if(myGroupsQuery != null)
+            myGroupsQuery.removeEventListener(getMyGroupsAssignmentsListener());
+        for(Query q : getUsersByGroupKeyQueries().values())
+            q.removeEventListener(getUserAssignmentsToMyGroupsListener());
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        getMyGroupsDictionary().putAll(
+                (HashMap<String, Group>)savedInstanceState.getSerializable(SAVED_INSTANCE_STATE_KEY_GROUPS_DICTIONARY));
+        getUsersDictionary().putAll(
+                (HashMap<String, User>)savedInstanceState.getSerializable(SAVED_INSTANCE_STATE_KEY_USERS_DICTIONARY));
+        getUsersByGroupKeyQueries().putAll(
+                (HashMap<String, Query>)savedInstanceState.getSerializable(SAVED_INSTANCE_STATE_KEY_USERS_BY_GROUP_KEY_QUERIES));
+        for(Query q : getUsersByGroupKeyQueries().values())
+            q.addChildEventListener(getUserAssignmentsToMyGroupsListener());
+        myGroupsQuery = FirebaseUtil.GetMyGroupsQuery(this);
+        myGroupsQuery.addChildEventListener(getMyGroupsAssignmentsListener());
+        StartTrackingFirebaseDatabase();
     }
 
     //endregion
@@ -555,6 +590,19 @@ public class MainActivity extends AppCompatActivity
         currentFragmentID = FRAGMENT_ID_LOADING;
     }
 
+    private void SwitchToSettingsFragment() {
+        if (settingsFragment == null)
+            settingsFragment = new SettingsFragment();
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.fl_fragments_container, settingsFragment);
+        transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+        transaction.addToBackStack("settings");
+        transaction.commit();
+        if (drawer.isDrawerOpen(GravityCompat.START))
+            drawer.closeDrawer(GravityCompat.START);
+        currentFragmentID = FRAGMENT_ID_SETTINGS;
+    }
+
     @Override
     public void onLoginMade(int afterLoginAction) {
         SwitchToMapFragment();
@@ -589,6 +637,29 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void hideFabsOnMapPaused() {
         SetFabsVisible(false);
+    }
+
+    @Override
+    public ArrayList<UserToGroupAssignment> getUTGAsForShowing() {
+        ArrayList<UserToGroupAssignment> result = new ArrayList<>();
+        if(getMyGroupsDictionary() == null || getMyGroupsDictionary().size() == 0)
+            return result;
+        for(String groupName : getMyGroupsDictionary().keySet()){
+            Group group = getMyGroupsDictionary().get(groupName);
+            if(group.getUserAssignments() == null || group.getUserAssignments().size() == 0)
+                continue;
+            for(String profileID : group.getUserAssignments().keySet()){
+                UserToGroupAssignment utga = new UserToGroupAssignment();
+                utga.setGroupID(group.getGeneratedID());
+                utga.setUserProfileID(profileID);
+                utga.setGroup(group);
+                utga.setUser(getUsersDictionary().get(profileID));
+                utga.setLastReportedLatitude(group.getUserAssignments().get(profileID).getLastReportedLatitude());
+                utga.setLastReportedLongitude(group.getUserAssignments().get(profileID).getLastReportedLongitude());
+                result.add(utga);
+            }
+        }
+        return result;
     }
 
     @Override
@@ -663,19 +734,19 @@ public class MainActivity extends AppCompatActivity
 
     //region runtime data model and event listeners
 
-    public Map<String, Group> getMyGroupsDictionary() {
+    public HashMap<String, Group> getMyGroupsDictionary() {
         if (myGroupsDictionary == null)
             myGroupsDictionary = new HashMap<>();
         return myGroupsDictionary;
     }
 
-    public Map<String, User> getUsersDictionary() {
+    public HashMap<String, User> getUsersDictionary() {
         if (usersDictionary == null)
             usersDictionary = new HashMap<>();
         return usersDictionary;
     }
 
-    public Map<String, Query> getUsersByGroupKeyQueries() {
+    public HashMap<String, Query> getUsersByGroupKeyQueries() {
         if (usersByGroupKeyQueries == null)
             usersByGroupKeyQueries = new HashMap<>();
         return usersByGroupKeyQueries;
@@ -1009,11 +1080,13 @@ public class MainActivity extends AppCompatActivity
                 CollapseFabs();
                 FirebaseUtil.CheckAuthForActionCode(this, ACTION_CODE_FOR_JOIN_GROUP, this);
                 break;
-
+            case R.id.btn_side_menu_settings:
+                SwitchToSettingsFragment();
+                break;
         }
     }
 
-    private void ExpandFabs(){
+    private void ExpandFabs() {
         final View.OnClickListener clickListener = this;
         fab_plus_to_x_rotate_anim.setAnimationListener(new Animation.AnimationListener() {
             @Override
@@ -1039,7 +1112,7 @@ public class MainActivity extends AppCompatActivity
         isExpanded = true;
     }
 
-    private void CollapseFabs(){
+    private void CollapseFabs() {
         final View.OnClickListener clickListener = this;
         fab_x_to_plus_rotate_anim.setAnimationListener(new Animation.AnimationListener() {
             @Override

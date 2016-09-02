@@ -24,4 +24,9 @@
         <item name="android:layout_marginBottom">0dp</item>
     </style>
 
+    <style name="text_view_settings_item">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
 </resources>

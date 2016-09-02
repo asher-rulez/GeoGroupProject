@@ -2,11 +2,13 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="Fragments.SettingsFragment">
+    tools:context="Fragments.SettingsFragment"
+    android:orientation="vertical">
 
     <RelativeLayout
+        android:id="@+id/rl_btn_settings_loc_reports_switch"
         android:layout_width="match_parent"
-        android:layout_height="56dp">
+        android:layout_height="@dimen/settings_item_height">
 
         <TextView
             android:layout_width="wrap_content"
@@ -14,7 +16,8 @@
             android:text="@string/settings_item_location_reports"
             android:layout_centerVertical="true"
             android:layout_alignParentLeft="true"
-            android:layout_marginLeft="16dp"/>
+            android:layout_marginLeft="@dimen/settings_left_margin"
+            style="@style/text_view_settings_item"/>
 
         <CheckBox
             android:id="@+id/cb_settings_location_reports"
@@ -22,7 +25,172 @@
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:layout_alignParentRight="true"
-            android:layout_marginRight="16dp"/>
+            android:layout_marginRight="@dimen/settings_right_margin"
+            android:layout_marginLeft="@dimen/settings_checkbox_left_margin"
+            android:clickable="false"/>
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/rl_btn_settings_loc_reports_frequency"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/settings_item_height">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_item_location_report_frequency"
+            android:layout_centerVertical="true"
+            android:layout_alignParentLeft="true"
+            android:layout_marginLeft="@dimen/settings_left_margin"
+            style="@style/text_view_settings_item"/>
+
+        <TextView
+            android:id="@+id/tv_settings_report_frequency"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_alignParentRight="true"
+            android:layout_marginRight="@dimen/settings_right_margin"
+            android:layout_marginLeft="@dimen/settings_checkbox_left_margin"
+            android:fontFamily="sans-serif-medium"
+            android:textSize="16sp"/>
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/rl_btn_settings_loc_reports_history"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/settings_item_height">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_item_save_history"
+            android:layout_centerVertical="true"
+            android:layout_alignParentLeft="true"
+            android:layout_marginLeft="@dimen/settings_left_margin"
+            style="@style/text_view_settings_item"/>
+
+        <CheckBox
+            android:id="@+id/cb_settings_location_reports_history"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_alignParentRight="true"
+            android:layout_marginRight="@dimen/settings_right_margin"
+            android:layout_marginLeft="@dimen/settings_checkbox_left_margin"
+            android:clickable="false"/>
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/rl_btn_settings_loc_reports_background"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/settings_item_height">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_item_send_reports_from_background"
+            android:layout_centerVertical="true"
+            android:layout_alignParentLeft="true"
+            android:layout_marginLeft="@dimen/settings_left_margin"
+            style="@style/text_view_settings_item"/>
+
+        <CheckBox
+            android:id="@+id/cb_settings_report_when_in_background"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_alignParentRight="true"
+            android:layout_marginRight="@dimen/settings_right_margin"
+            android:layout_marginLeft="@dimen/settings_checkbox_left_margin"
+            android:clickable="false"/>
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/rl_btn_settings_loc_reports_notification"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/settings_item_height">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_item_show_notification_background_reports"
+            android:layout_centerVertical="true"
+            android:layout_alignParentLeft="true"
+            android:layout_marginLeft="@dimen/settings_left_margin"
+            style="@style/text_view_settings_item"/>
+
+        <CheckBox
+            android:id="@+id/cb_settings_report_notification"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_alignParentRight="true"
+            android:layout_marginRight="@dimen/settings_right_margin"
+            android:layout_marginLeft="@dimen/settings_checkbox_left_margin"
+            android:clickable="false"/>
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/rl_btn_settings_keep_screen_on"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/settings_item_height">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_item_keep_screen_on"
+            android:layout_centerVertical="true"
+            android:layout_alignParentLeft="true"
+            android:layout_marginLeft="@dimen/settings_left_margin"
+            style="@style/text_view_settings_item"/>
+
+        <CheckBox
+            android:id="@+id/cb_settings_keep_screen_on"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_alignParentRight="true"
+            android:layout_marginRight="@dimen/settings_right_margin"
+            android:layout_marginLeft="@dimen/settings_checkbox_left_margin"
+            android:clickable="false"/>
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/fl_btn_settings_notifications"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/settings_item_height">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_item_notifications"
+            android:layout_centerVertical="true"
+            android:layout_alignParentLeft="true"
+            android:layout_marginLeft="@dimen/settings_left_margin"
+            style="@style/text_view_settings_item"/>
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/fl_btn_settings_user"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/settings_item_height">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_item_user_accont"
+            android:layout_centerVertical="true"
+            android:layout_alignParentLeft="true"
+            android:layout_marginLeft="@dimen/settings_left_margin"
+            style="@style/text_view_settings_item"/>
 
     </RelativeLayout>
 
