@@ -126,6 +126,12 @@ public class MainActivity extends AppCompatActivity
     private final int FRAGMENT_ID_LOADING = 4;
     private final int FRAGMENT_ID_SETTINGS = 5;
 
+    private final String FRAGMENT_TAG_MAP = "tag_map";
+    private final String FRAGMENT_TAG_LOGIN = "tag_login";
+    private final String FRAGMENT_TAG_JOINCREATE = "tag_join_create";
+    private final String FRAGMENT_TAG_LOADING = "tag_loading";
+    private final String FRAGMENT_TAG_SETTINGS = "tag_settings";
+
     SettingsFragment settingsFragment;
     MapFragment mapFragment;
     LoginFragment loginFragment;
@@ -175,27 +181,30 @@ public class MainActivity extends AppCompatActivity
 
         if (savedInstanceState == null) {
             SwitchToLoadingFragment();
-            if (SharedPreferencesUtil.GetFCMTokenFromSharedPreferences(this).equals(""))
-                new AsyncTask<Void, Void, Void>() {
-                    @Override
-                    protected Void doInBackground(Void... voids) {
-                        String token = FirebaseInstanceId.getInstance().getToken();
-                        if (token != null) {
-                            Log.i(MY_TAG, "got token: " + token);
-                            SharedPreferencesUtil.SaveFCMTokenInSharedPreferences(getApplicationContext(), token);
-                        }
-                        return null;
-                    }
-
-                    @Override
-                    protected void onPostExecute(Void aVoid) {
-                        super.onPostExecute(aVoid);
-                        RequestPermissionsBeforeCheckingAuth();
-                        //CheckAuthorization(authListener);
-                    }
-                }.execute();
-            else RequestPermissionsBeforeCheckingAuth();//CheckAuthorization(authListener);
         }
+    }
+
+    private void CheckTokenAndAuth(){
+        if (SharedPreferencesUtil.GetFCMTokenFromSharedPreferences(this).equals(""))
+            new AsyncTask<Void, Void, Void>() {
+                @Override
+                protected Void doInBackground(Void... voids) {
+                    String token = FirebaseInstanceId.getInstance().getToken();
+                    if (token != null) {
+                        Log.i(MY_TAG, "got token: " + token);
+                        SharedPreferencesUtil.SaveFCMTokenInSharedPreferences(getApplicationContext(), token);
+                    }
+                    return null;
+                }
+
+                @Override
+                protected void onPostExecute(Void aVoid) {
+                    super.onPostExecute(aVoid);
+                    RequestPermissionsBeforeCheckingAuth();
+                    //CheckAuthorization(authListener);
+                }
+            }.execute();
+        else RequestPermissionsBeforeCheckingAuth();//CheckAuthorization(authListener);
     }
 
     private void CheckAuthorization(final FirebaseUtil.IFirebaseCheckAuthCallback callbackListener) {
@@ -282,12 +291,24 @@ public class MainActivity extends AppCompatActivity
         if (!isGoogleServiceAvailable)
             OnGooglePlayServicesCheckError();
 
+        ReFindFragments();
+        CheckTokenAndAuth();
+
         super.onResume();
+    }
+
+    private void ReFindFragments(){
+        mapFragment = (MapFragment)getSupportFragmentManager().findFragmentByTag(FRAGMENT_TAG_MAP);
+        createJoinFragment = (CreateJoinGroupFragment)getSupportFragmentManager().findFragmentByTag(FRAGMENT_TAG_JOINCREATE);
+        loginFragment = (LoginFragment) getSupportFragmentManager().findFragmentByTag(FRAGMENT_TAG_LOGIN);
+        loadingFragment = (LoadingFragment) getSupportFragmentManager().findFragmentByTag(FRAGMENT_TAG_LOADING);
+        settingsFragment = (SettingsFragment) getSupportFragmentManager().findFragmentByTag(FRAGMENT_TAG_SETTINGS);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+        StopListeners();
     }
 
     @Override
@@ -337,27 +358,32 @@ public class MainActivity extends AppCompatActivity
     public void onSaveInstanceState(Bundle outState) {
         outState.putSerializable(SAVED_INSTANCE_STATE_KEY_GROUPS_DICTIONARY, getMyGroupsDictionary());
         outState.putSerializable(SAVED_INSTANCE_STATE_KEY_USERS_DICTIONARY, getUsersDictionary());
-        outState.putSerializable(SAVED_INSTANCE_STATE_KEY_USERS_BY_GROUP_KEY_QUERIES, getUsersByGroupKeyQueries());
+        //outState.putSerializable(SAVED_INSTANCE_STATE_KEY_USERS_BY_GROUP_KEY_QUERIES, getUsersByGroupKeyQueries());
+        StopListeners();
+        super.onSaveInstanceState(outState);
+    }
+
+    private void StopListeners(){
         if(myGroupsQuery != null)
             myGroupsQuery.removeEventListener(getMyGroupsAssignmentsListener());
         for(Query q : getUsersByGroupKeyQueries().values())
             q.removeEventListener(getUserAssignmentsToMyGroupsListener());
-        super.onSaveInstanceState(outState);
     }
 
     @Override
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
+        CommonUtil.SetIsApplicationRunningInForeground(this, false);
         getMyGroupsDictionary().putAll(
                 (HashMap<String, Group>)savedInstanceState.getSerializable(SAVED_INSTANCE_STATE_KEY_GROUPS_DICTIONARY));
         getUsersDictionary().putAll(
                 (HashMap<String, User>)savedInstanceState.getSerializable(SAVED_INSTANCE_STATE_KEY_USERS_DICTIONARY));
-        getUsersByGroupKeyQueries().putAll(
-                (HashMap<String, Query>)savedInstanceState.getSerializable(SAVED_INSTANCE_STATE_KEY_USERS_BY_GROUP_KEY_QUERIES));
-        for(Query q : getUsersByGroupKeyQueries().values())
-            q.addChildEventListener(getUserAssignmentsToMyGroupsListener());
-        myGroupsQuery = FirebaseUtil.GetMyGroupsQuery(this);
-        myGroupsQuery.addChildEventListener(getMyGroupsAssignmentsListener());
+//        getUsersByGroupKeyQueries().putAll(
+//                (HashMap<String, Query>)savedInstanceState.getSerializable(SAVED_INSTANCE_STATE_KEY_USERS_BY_GROUP_KEY_QUERIES));
+//        for(Query q : getUsersByGroupKeyQueries().values())
+//            q.addChildEventListener(getUserAssignmentsToMyGroupsListener());
+//        myGroupsQuery = FirebaseUtil.GetMyGroupsQuery(this);
+//        myGroupsQuery.addChildEventListener(getMyGroupsAssignmentsListener());
         StartTrackingFirebaseDatabase();
     }
 
@@ -540,7 +566,7 @@ public class MainActivity extends AppCompatActivity
             if (mapFragment == null)
                 mapFragment = new MapFragment();
             FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-            transaction.replace(R.id.fl_fragments_container, mapFragment);
+            transaction.replace(R.id.fl_fragments_container, mapFragment, FRAGMENT_TAG_MAP);
             for (int i = 0; i < getSupportFragmentManager().getBackStackEntryCount(); i++) {
                 getSupportFragmentManager().popBackStackImmediate();
             }
@@ -556,7 +582,7 @@ public class MainActivity extends AppCompatActivity
                 loginFragment = new LoginFragment();
             loginFragment.SetAfterLoginAction(actionCode);
             FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-            transaction.replace(R.id.fl_fragments_container, loginFragment);
+            transaction.replace(R.id.fl_fragments_container, loginFragment, FRAGMENT_TAG_LOGIN);
             transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
             transaction.addToBackStack("login");
             transaction.commit();
@@ -571,7 +597,7 @@ public class MainActivity extends AppCompatActivity
                 createJoinFragment = new CreateJoinGroupFragment();
             createJoinFragment.SetAction(actionCode);
             FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-            transaction.replace(R.id.fl_fragments_container, createJoinFragment);
+            transaction.replace(R.id.fl_fragments_container, createJoinFragment, FRAGMENT_TAG_JOINCREATE);
             transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
             transaction.addToBackStack("createJoin");
             transaction.commit();
@@ -584,7 +610,7 @@ public class MainActivity extends AppCompatActivity
         if (loadingFragment == null)
             loadingFragment = new LoadingFragment();
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-        transaction.replace(R.id.fl_fragments_container, loadingFragment);
+        transaction.replace(R.id.fl_fragments_container, loadingFragment, FRAGMENT_TAG_LOADING);
         transaction.commit();
         //SetFabsVisible(false);
         currentFragmentID = FRAGMENT_ID_LOADING;
@@ -594,7 +620,7 @@ public class MainActivity extends AppCompatActivity
         if (settingsFragment == null)
             settingsFragment = new SettingsFragment();
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-        transaction.replace(R.id.fl_fragments_container, settingsFragment);
+        transaction.replace(R.id.fl_fragments_container, settingsFragment, FRAGMENT_TAG_SETTINGS);
         transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
         transaction.addToBackStack("settings");
         transaction.commit();
@@ -769,38 +795,46 @@ public class MainActivity extends AppCompatActivity
                     }
                     if (getMyGroupsDictionary().containsKey(utga.getGroupID())) {
                         Log.e(MY_TAG, "group already exists: getMyGroupsAssignmentsListener onChildAdded");
-                        return;
-                    }
-                    Log.i(MY_TAG, "got group for myGroups: " + utga.getGroupID());
-                    FirebaseUtil.GetQueryForSingleGroupByGroupKey(getApplicationContext(), utga.getGroupID())
-                            .addListenerForSingleValueEvent(new ValueEventListener() {
-                                @Override
-                                public void onDataChange(DataSnapshot dataSnapshot) {
-                                    int i = 0;
-                                    for (DataSnapshot ds : dataSnapshot.getChildren()) {
-                                        if (i > 0) {
-                                            Log.e(MY_TAG, "unexpected amount of groups got by one key!");
-                                            return;
+                        Query usersByGroupQ = getUsersByGroupKeyQueries().get(utga.getGroupID());
+                        if(usersByGroupQ == null) {
+                            usersByGroupQ = FirebaseUtil.GetUsersOfGroupQuery(getApplicationContext(), utga.getGroupID());
+                            getUsersByGroupKeyQueries().put(utga.getGroupID(), usersByGroupQ);
+                        }
+                        usersByGroupQ.removeEventListener(getUserAssignmentsToMyGroupsListener());
+                        usersByGroupQ.addChildEventListener(getUserAssignmentsToMyGroupsListener());
+                        //return;
+                    } else {
+                        Log.i(MY_TAG, "got group for myGroups: " + utga.getGroupID());
+                        FirebaseUtil.GetQueryForSingleGroupByGroupKey(getApplicationContext(), utga.getGroupID())
+                                .addListenerForSingleValueEvent(new ValueEventListener() {
+                                    @Override
+                                    public void onDataChange(DataSnapshot dataSnapshot) {
+                                        int i = 0;
+                                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                                            if (i > 0) {
+                                                Log.e(MY_TAG, "unexpected amount of groups got by one key!");
+                                                return;
+                                            }
+                                            Group group1 = ds.getValue(Group.class);
+                                            group1.setKey(ds.getKey());
+                                            group1.setSelfReference(FirebaseDatabase.getInstance().getReference()
+                                                    .child(getApplicationContext().getString(R.string.firebase_child_groups))
+                                                    .child(group1.getKey()));
+                                            getMyGroupsDictionary().put(group1.getGeneratedID(), group1);
+                                            Query usersByGroupQuery = FirebaseUtil.GetUsersOfGroupQuery(getApplicationContext(), group1.getGeneratedID());
+                                            usersByGroupQuery.addChildEventListener(getUserAssignmentsToMyGroupsListener());
+                                            getUsersByGroupKeyQueries().put(group1.getGeneratedID(), usersByGroupQuery);
+                                            NotifyGroupAdded(group1);
+                                            i++;
                                         }
-                                        Group group1 = ds.getValue(Group.class);
-                                        group1.setKey(ds.getKey());
-                                        group1.setSelfReference(FirebaseDatabase.getInstance().getReference()
-                                                .child(getApplicationContext().getString(R.string.firebase_child_groups))
-                                                .child(group1.getKey()));
-                                        getMyGroupsDictionary().put(group1.getGeneratedID(), group1);
-                                        Query usersByGroupQuery = FirebaseUtil.GetUsersOfGroupQuery(getApplicationContext(), group1.getGeneratedID());
-                                        usersByGroupQuery.addChildEventListener(getUserAssignmentsToMyGroupsListener());
-                                        getUsersByGroupKeyQueries().put(group1.getGeneratedID(), usersByGroupQuery);
-                                        NotifyGroupAdded(group1);
-                                        i++;
                                     }
-                                }
 
-                                @Override
-                                public void onCancelled(DatabaseError databaseError) {
-                                    databaseError.toException().printStackTrace();
-                                }
-                            });
+                                    @Override
+                                    public void onCancelled(DatabaseError databaseError) {
+                                        databaseError.toException().printStackTrace();
+                                    }
+                                });
+                    }
                 }
 
                 @Override

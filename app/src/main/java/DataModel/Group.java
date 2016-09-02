@@ -77,7 +77,7 @@ public class Group implements IFirebaseSavable, Comparable<Group>, Serializable 
     }
 
     @Exclude
-    private DatabaseReference selfReference;
+    private transient DatabaseReference selfReference;
 
     @Exclude
     public DatabaseReference getSelfReference() {
