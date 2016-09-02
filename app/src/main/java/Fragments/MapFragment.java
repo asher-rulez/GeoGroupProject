@@ -55,6 +55,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import DataModel.Group;
 import DataModel.User;
 import DataModel.UserToGroupAssignment;
 import Utils.CommonUtil;
@@ -146,6 +147,7 @@ public class MapFragment extends SupportMapFragment
     public void onResume() {
         super.onResume();
         mapView.onResume();
+        mListener.showFabsForMap();
     }
 
     @Override
@@ -201,7 +203,21 @@ public class MapFragment extends SupportMapFragment
                 || ContextCompat.checkSelfPermission(appContext, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             CommonUtil.RequestLocationPermissions(getActivity(), REQUEST_CODE_ASK_LOCATION_PERMISSION);
         } else SetMapProperties();
-        mListener.showFabsForMap();
+
+        if(getMyMarkers().size() > 0){
+            Bitmap markerIcon;
+            BitmapDescriptor icon = null;
+
+            markerIcon = UIUtil.decodeScaledBitmapFromDrawableResource(getResources(), R.drawable.map_marker_blue, 128, 128);
+            icon = BitmapDescriptorFactory.fromBitmap(markerIcon);
+
+            for(String key : getMyMarkers().keySet()){
+                Marker prevMarker = getMyMarkers().get(key);
+                prevMarker.remove();
+                getMyMarkers().remove(key);
+                getMyMarkers().put(key, AddMarker(prevMarker.getPosition().latitude, prevMarker.getPosition().longitude, prevMarker.getTitle(), icon));
+            }
+        }
     }
 
     @Override
@@ -221,6 +237,7 @@ public class MapFragment extends SupportMapFragment
             googleMap.setOnInfoWindowClickListener(this);
             googleMap.getUiSettings().setMyLocationButtonEnabled(false);
             TryGetLocationAndCenterMap();
+
         }
     }
 
@@ -358,7 +375,7 @@ public class MapFragment extends SupportMapFragment
         return myMarkers;
     }
 
-    public void AddMarkerForNewUser(String username, String groupname, double latitude, double longitude) {
+    public void AddMarkerForNewUser(User user, Group group, double latitude, double longitude) {
         Bitmap markerIcon;
         BitmapDescriptor icon = null;
 
@@ -366,7 +383,7 @@ public class MapFragment extends SupportMapFragment
         icon = BitmapDescriptorFactory.fromBitmap(markerIcon);
 
         if (googleMap != null)
-            getMyMarkers().put(groupname + ":" + username, AddMarker(latitude, longitude, groupname + ":" + username, icon));
+            getMyMarkers().put(group.getGeneratedID() + ":" + user.getProfileID(), AddMarker(latitude, longitude, group.getName() + ":" + user.getUsername(), icon));
     }
 
     private Marker AddMarker(double latitude, double longtitude, String title, BitmapDescriptor icon) {

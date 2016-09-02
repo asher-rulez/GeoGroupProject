@@ -908,7 +908,7 @@ public class MainActivity extends AppCompatActivity
                 getString(R.string.snackbar_user_joined_group).replace("{0}", user.getUsername()).replace("{1}", group.getName()),
                 Snackbar.LENGTH_SHORT).show();
         if (mapFragment != null)//todo: add check if I'm tracking this group
-            mapFragment.AddMarkerForNewUser(user.getUsername(), group.getName(), utga.getLastReportedLatitude(), utga.getLastReportedLongitude());
+            mapFragment.AddMarkerForNewUser(user, group, utga.getLastReportedLatitude(), utga.getLastReportedLongitude());
     }
 
     private void NotifyUserUpdatedLocation(UserToGroupAssignment utga) {
@@ -916,7 +916,7 @@ public class MainActivity extends AppCompatActivity
         if (mapFragment != null) {//todo: add check if I'm tracking this group
             User user = getUsersDictionary().get(utga.getUserProfileID());
             Group group = getMyGroupsDictionary().get(utga.getGroupID());
-            mapFragment.MoveMarker(user.getUsername(), group.getName(), utga.getLastReportedLatitude(), utga.getLastReportedLongitude());
+            mapFragment.MoveMarker(user.getProfileID(), group.getGeneratedID(), utga.getLastReportedLatitude(), utga.getLastReportedLongitude());
         }
     }
 
@@ -925,7 +925,7 @@ public class MainActivity extends AppCompatActivity
         if (mapFragment != null) {
             User user = getUsersDictionary().get(utga.getUserProfileID());
             Group group = getMyGroupsDictionary().get(utga.getGroupID());
-            mapFragment.RemoveMarker(user.getUsername(), group.getName());
+            mapFragment.RemoveMarker(user.getProfileID(), group.getGeneratedID());
         }
     }
 
