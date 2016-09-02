@@ -15,6 +15,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.FragmentTransaction;
@@ -402,12 +403,27 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void SetFabsVisible(boolean isVisible) {
-        if (fab_plus != null)
-            fab_plus.setVisibility(isVisible ? View.VISIBLE : View.GONE);
-        if (fab_create_group != null)
-            fab_create_group.setVisibility(isVisible && isExpanded ? View.VISIBLE : View.GONE);
-        if (fab_join_group != null)
-            fab_join_group.setVisibility(isVisible && isExpanded ? View.VISIBLE : View.GONE);
+        if (fab_plus == null) return;
+        final View.OnClickListener clickListener = this;
+        Animation anim = isVisible ? fab_appear_anim : fab_collapse_anim;
+        anim.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                fab_plus.setOnClickListener(null);
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                fab_plus.setOnClickListener(clickListener);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+        fab_plus.startAnimation(anim);
+        fab_plus.setClickable(isVisible);
     }
 
     //endregion
@@ -494,7 +510,7 @@ public class MainActivity extends AppCompatActivity
                 getSupportFragmentManager().popBackStackImmediate();
             }
             transaction.commit();
-            SetFabsVisible(true);
+            //SetFabsVisible(true);
             currentFragmentID = FRAGMENT_ID_MAP;
         } else ScheduleSwitchToFragment(FRAGMENT_ID_MAP, null);
     }
@@ -509,7 +525,7 @@ public class MainActivity extends AppCompatActivity
             transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
             transaction.addToBackStack("login");
             transaction.commit();
-            SetFabsVisible(false);
+            //SetFabsVisible(false);
             currentFragmentID = FRAGMENT_ID_LOGIN;
         } else ScheduleSwitchToFragment(FRAGMENT_ID_LOGIN, actionCode);
     }
@@ -524,7 +540,7 @@ public class MainActivity extends AppCompatActivity
             transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
             transaction.addToBackStack("createJoin");
             transaction.commit();
-            SetFabsVisible(false);
+            //SetFabsVisible(false);
             currentFragmentID = FRAGMENT_ID_JOINCREATE;
         } else ScheduleSwitchToFragment(FRAGMENT_ID_JOINCREATE, actionCode);
     }
@@ -535,7 +551,7 @@ public class MainActivity extends AppCompatActivity
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.fl_fragments_container, loadingFragment);
         transaction.commit();
-        SetFabsVisible(false);
+        //SetFabsVisible(false);
         currentFragmentID = FRAGMENT_ID_LOADING;
     }
 
@@ -563,6 +579,16 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onMapFinishedLoading() {
         FirebaseUtil.CheckAuthForActionCode(this, ACTION_CODE_INITIAL_GROUPS_CHECK, this);
+    }
+
+    @Override
+    public void showFabsForMap() {
+        SetFabsVisible(true);
+    }
+
+    @Override
+    public void hideFabsOnMapPaused() {
+        SetFabsVisible(false);
     }
 
     @Override
@@ -969,63 +995,74 @@ public class MainActivity extends AppCompatActivity
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.fab_plus:
-                final View.OnClickListener clickListener = this;
                 if (isExpanded) {
-                    fab_x_to_plus_rotate_anim.setAnimationListener(new Animation.AnimationListener() {
-                        @Override
-                        public void onAnimationStart(Animation animation) {
-                            fab_plus.setOnClickListener(null);
-                        }
-
-                        @Override
-                        public void onAnimationEnd(Animation animation) {
-                            fab_plus.setOnClickListener(clickListener);
-                        }
-
-                        @Override
-                        public void onAnimationRepeat(Animation animation) {
-
-                        }
-                    });
-                    fab_join_group.startAnimation(fab_collapse_anim);
-                    fab_create_group.startAnimation(fab_collapse_anim);
-                    fab_plus.startAnimation(fab_x_to_plus_rotate_anim);
-                    fab_join_group.setClickable(false);
-                    fab_create_group.setClickable(false);
-                    isExpanded = false;
+                    CollapseFabs();
                 } else {
-                    fab_plus_to_x_rotate_anim.setAnimationListener(new Animation.AnimationListener() {
-                        @Override
-                        public void onAnimationStart(Animation animation) {
-                            fab_plus.setOnClickListener(null);
-                        }
-
-                        @Override
-                        public void onAnimationEnd(Animation animation) {
-                            fab_plus.setOnClickListener(clickListener);
-                        }
-
-                        @Override
-                        public void onAnimationRepeat(Animation animation) {
-
-                        }
-                    });
-                    fab_join_group.startAnimation(fab_appear_anim);
-                    fab_create_group.startAnimation(fab_appear_anim);
-                    fab_plus.startAnimation(fab_plus_to_x_rotate_anim);
-                    fab_join_group.setClickable(true);
-                    fab_create_group.setClickable(true);
-                    isExpanded = true;
+                    ExpandFabs();
                 }
                 break;
             case R.id.fab_create_group:
                 FirebaseUtil.CheckAuthForActionCode(this, ACTION_CODE_FOR_CREATE_GROUP, this);
+                CollapseFabs();
                 break;
             case R.id.fab_join_group:
                 FirebaseUtil.CheckAuthForActionCode(this, ACTION_CODE_FOR_JOIN_GROUP, this);
+                CollapseFabs();
                 break;
 
         }
+    }
+
+    private void ExpandFabs(){
+        final View.OnClickListener clickListener = this;
+        fab_plus_to_x_rotate_anim.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                fab_plus.setOnClickListener(null);
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                fab_plus.setOnClickListener(clickListener);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+        fab_join_group.startAnimation(fab_appear_anim);
+        fab_create_group.startAnimation(fab_appear_anim);
+        fab_plus.startAnimation(fab_plus_to_x_rotate_anim);
+        fab_join_group.setClickable(true);
+        fab_create_group.setClickable(true);
+        isExpanded = true;
+    }
+
+    private void CollapseFabs(){
+        final View.OnClickListener clickListener = this;
+        fab_x_to_plus_rotate_anim.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                fab_plus.setOnClickListener(null);
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                fab_plus.setOnClickListener(clickListener);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+        fab_join_group.startAnimation(fab_collapse_anim);
+        fab_create_group.startAnimation(fab_collapse_anim);
+        fab_plus.startAnimation(fab_x_to_plus_rotate_anim);
+        fab_join_group.setClickable(false);
+        fab_create_group.setClickable(false);
+        isExpanded = false;
     }
 
     //endregion

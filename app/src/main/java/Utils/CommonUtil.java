@@ -37,4 +37,9 @@ public class CommonUtil {
                 new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
                 requestCode);
     }
+
+    public static int GetDPSize(Context ctx, int dps){
+        final float scale = ctx.getResources().getDisplayMetrics().density;
+        return (int) (dps * scale + 0.5f);
+    }
 }

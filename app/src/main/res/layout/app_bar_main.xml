@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/coordinator_main"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -31,6 +32,7 @@
         android:padding="0dp"
         app:backgroundTint="@color/plus_button_red"
         android:src="@drawable/white_plus"
+        android:visibility="gone"
         android:layout_marginRight="10dp"
         android:layout_marginBottom="10dp"/>
 
@@ -41,7 +43,7 @@
         android:layout_gravity="bottom|end"
         app:backgroundTint="@color/plus_button_red"
         android:src="@drawable/fab_create"
-        android:visibility="invisible"
+        android:visibility="gone"
         android:layout_marginRight="10dp"
         android:layout_marginBottom="130dp"/>
 
@@ -52,7 +54,7 @@
         android:layout_gravity="bottom|end"
         app:backgroundTint="@color/plus_button_red"
         android:src="@drawable/fab_join"
-        android:visibility="invisible"
+        android:visibility="gone"
         android:layout_marginRight="10dp"
         android:layout_marginBottom="70dp"/>
 

@@ -107,12 +107,12 @@ public class MapFragment extends SupportMapFragment
                              Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
         view = inflater.inflate(R.layout.fragment_map, container, false);
-        mapView = (MapView)view.findViewById(R.id.mv_map);
+        mapView = (MapView) view.findViewById(R.id.mv_map);
         mapView.onCreate(savedInstanceState);
         mapView.onResume();
-        try{
+        try {
             MapsInitializer.initialize(getActivity().getApplicationContext());
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
         mapView.getMapAsync(this);
@@ -152,6 +152,7 @@ public class MapFragment extends SupportMapFragment
     public void onPause() {
         super.onPause();
         mapView.onPause();
+        mListener.hideFabsOnMapPaused();
     }
 
     @Override
@@ -200,7 +201,7 @@ public class MapFragment extends SupportMapFragment
                 || ContextCompat.checkSelfPermission(appContext, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             CommonUtil.RequestLocationPermissions(getActivity(), REQUEST_CODE_ASK_LOCATION_PERMISSION);
         } else SetMapProperties();
-
+        mListener.showFabsForMap();
     }
 
     @Override
@@ -276,7 +277,7 @@ public class MapFragment extends SupportMapFragment
                                     return;
                                 }
                                 loc = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-                                if (loc != null){
+                                if (loc != null) {
                                     SetLastLocation(loc, true);
                                     return;
                                 }
@@ -300,28 +301,30 @@ public class MapFragment extends SupportMapFragment
     }
 
     private void SetLastLocation(LatLng latLng) {
-        if(latLng != null)
+        if (latLng != null)
             SharedPreferencesUtil.SaveLocationInSharedPreferences(getContext(), latLng.latitude, latLng.longitude, new Date());
         lastLocation = latLng;
     }
-    private void SetLastLocation(LatLng latLng, boolean ifCenterOnMyLocation){
+
+    private void SetLastLocation(LatLng latLng, boolean ifCenterOnMyLocation) {
         SetLastLocation(latLng);
-        if(ifCenterOnMyLocation)
+        if (ifCenterOnMyLocation)
             CheckIfLocationSavedInSPAndCenterOnIt();
     }
 
     private void SetLastLocation(Location location) {
-        if(location != null)
+        if (location != null)
             SharedPreferencesUtil.SaveLocationInSharedPreferences(getContext(), location.getLatitude(), location.getLongitude(), new Date());
         lastLocation = location == null ? null : new LatLng(location.getLatitude(), location.getLongitude());
     }
-    private void SetLastLocation(Location location, boolean ifCenterOnMyLocation){
+
+    private void SetLastLocation(Location location, boolean ifCenterOnMyLocation) {
         SetLastLocation(location);
-        if(ifCenterOnMyLocation)
+        if (ifCenterOnMyLocation)
             CheckIfLocationSavedInSPAndCenterOnIt();
     }
 
-    private void CheckIfLocationSavedInSPAndCenterOnIt(){
+    private void CheckIfLocationSavedInSPAndCenterOnIt() {
         if (lastLocation == null) {
             LatLng latLngSP = SharedPreferencesUtil.GetLastLocationLatLng(getContext());
             if (latLngSP != null)
@@ -350,19 +353,19 @@ public class MapFragment extends SupportMapFragment
     }
 
     public Map<String, Marker> getMyMarkers() {
-        if(myMarkers == null)
+        if (myMarkers == null)
             myMarkers = new HashMap<>();
         return myMarkers;
     }
 
-    public void AddMarkerForNewUser(String username, String groupname, double latitude, double longitude){
+    public void AddMarkerForNewUser(String username, String groupname, double latitude, double longitude) {
         Bitmap markerIcon;
         BitmapDescriptor icon = null;
 
         markerIcon = UIUtil.decodeScaledBitmapFromDrawableResource(getResources(), R.drawable.map_marker_blue, 128, 128);
         icon = BitmapDescriptorFactory.fromBitmap(markerIcon);
 
-        if(googleMap != null)
+        if (googleMap != null)
             getMyMarkers().put(groupname + ":" + username, AddMarker(latitude, longitude, groupname + ":" + username, icon));
     }
 
@@ -373,15 +376,15 @@ public class MapFragment extends SupportMapFragment
         return googleMap.addMarker(newMarker);
     }
 
-    public void MoveMarker(String username, String groupname, double latitude, double longitude){
+    public void MoveMarker(String username, String groupname, double latitude, double longitude) {
         Marker m = getMyMarkers().get(groupname + ":" + username);
-        if(m != null){
+        if (m != null) {
             LatLngInterpolator.Linear interpolator = new LatLngInterpolator.Linear();
             animateMarker(m, new LatLng(latitude, longitude), interpolator);
         }
     }
 
-    static void animateMarker(Marker marker, LatLng newPosition, final LatLngInterpolator interpolator){
+    static void animateMarker(Marker marker, LatLng newPosition, final LatLngInterpolator interpolator) {
         TypeEvaluator<LatLng> typeEvaluator = new TypeEvaluator<LatLng>() {
             @Override
             public LatLng evaluate(float fraction, LatLng startValue, LatLng endValue) {
@@ -394,9 +397,9 @@ public class MapFragment extends SupportMapFragment
         animator.start();
     }
 
-    public void RemoveMarker(String username, String groupname){
+    public void RemoveMarker(String username, String groupname) {
         Marker m = getMyMarkers().get(groupname + ":" + username);
-        if(m != null)
+        if (m != null)
             m.remove();
     }
 
@@ -445,11 +448,15 @@ public class MapFragment extends SupportMapFragment
     }
 
     public interface OnMapFragmentInteractionListener {
-//        void showLoginFragmentForAction(int actionCode);
+        //        void showLoginFragmentForAction(int actionCode);
 //
 //        void openCreateJoinGroupFragment(int actionCode);
 //
         void onMapFinishedLoading();
+
+        void showFabsForMap();
+
+        void hideFabsOnMapPaused();
     }
 
     //endregion
