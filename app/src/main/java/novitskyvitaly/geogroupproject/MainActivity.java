@@ -1002,12 +1002,12 @@ public class MainActivity extends AppCompatActivity
                 }
                 break;
             case R.id.fab_create_group:
-                FirebaseUtil.CheckAuthForActionCode(this, ACTION_CODE_FOR_CREATE_GROUP, this);
                 CollapseFabs();
+                FirebaseUtil.CheckAuthForActionCode(this, ACTION_CODE_FOR_CREATE_GROUP, this);
                 break;
             case R.id.fab_join_group:
-                FirebaseUtil.CheckAuthForActionCode(this, ACTION_CODE_FOR_JOIN_GROUP, this);
                 CollapseFabs();
+                FirebaseUtil.CheckAuthForActionCode(this, ACTION_CODE_FOR_JOIN_GROUP, this);
                 break;
 
         }
