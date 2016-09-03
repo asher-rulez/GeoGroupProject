@@ -892,47 +892,13 @@ public class MainActivity extends AppCompatActivity
                 @Override
                 public void onChildAdded(DataSnapshot dataSnapshot, String s) {
                     final UserToGroupAssignment utga = dataSnapshot.getValue(UserToGroupAssignment.class);
-                    if (utga == null) {
-                        Log.e(MY_TAG, "utga null: getUserAssignmentsToMyGroupsListener onChildAdded");
-                        return;
-                    }
-                    if (!getMyGroupsDictionary().containsKey(utga.getGroupID())) {
-                        Log.e(MY_TAG, "group not found: getUserAssignmentsToMyGroupsListener onChildAdded");
-                        return;
-                    }
-                    if (utga.getUserProfileID().equals(SharedPreferencesUtil.GetMyProfileID(getApplicationContext())))
-                        return; // my own assignment
-                    if (!LocationListenerService.IsServiceRunning)
-                        StartLocationReportService();
-                    Log.i(MY_TAG, "got user (" + utga.getUserProfileID() + ") joined group: " + utga.getGroupID());
-                    if (getMyGroupsDictionary().get(utga.getGroupID()).getUserAssignments().containsKey(utga.getUserProfileID())) {
-                        Log.e(MY_TAG, "user assignment already exists in this group");
-                        //todo: can go to onChildChanged algorythm or do nothing
-                        return;
-                    }
-                    HandleUserJoinedGroup(utga);
+                    onUTGAAdded(utga);
                 }
 
                 @Override
                 public void onChildChanged(DataSnapshot dataSnapshot, String s) {
                     final UserToGroupAssignment utga = dataSnapshot.getValue(UserToGroupAssignment.class);
-                    if (utga == null) {
-                        Log.e(MY_TAG, "utga null: getUserAssignmentsToMyGroupsListener onChildAdded");
-                        return;
-                    }
-                    if (!getMyGroupsDictionary().containsKey(utga.getGroupID())) {
-                        Log.e(MY_TAG, "group not found: getUserAssignmentsToMyGroupsListener onChildAdded");
-                        return;
-                    }
-                    if (utga.getUserProfileID().equals(SharedPreferencesUtil.GetMyProfileID(getApplicationContext())))
-                        return; // my own assignment
-                    if (!getMyGroupsDictionary().get(utga.getGroupID()).getUserAssignments().containsKey(utga.getUserProfileID())) {
-                        HandleUserJoinedGroup(utga);
-                    } else {
-                        getMyGroupsDictionary().get(utga.getGroupID()).getUserAssignments().remove(utga.getUserProfileID());
-                        getMyGroupsDictionary().get(utga.getGroupID()).getUserAssignments().put(utga.getUserProfileID(), utga);
-                        NotifyUserUpdatedLocation(utga);
-                    }
+                    onUTGAUpdated(utga);
                 }
 
                 @Override
@@ -964,6 +930,48 @@ public class MainActivity extends AppCompatActivity
                 }
             };
         return userAssignmentsToMyGroupsListener;
+    }
+
+    private void onUTGAAdded(UserToGroupAssignment utga){
+        if (utga == null) {
+            Log.e(MY_TAG, "utga null: getUserAssignmentsToMyGroupsListener onChildAdded");
+            return;
+        }
+        if (!getMyGroupsDictionary().containsKey(utga.getGroupID())) {
+            Log.e(MY_TAG, "group not found: getUserAssignmentsToMyGroupsListener onChildAdded");
+            return;
+        }
+        if (utga.getUserProfileID().equals(SharedPreferencesUtil.GetMyProfileID(getApplicationContext())))
+            return; // my own assignment
+        if (!LocationListenerService.IsServiceRunning)
+            StartLocationReportService();
+        Log.i(MY_TAG, "got user (" + utga.getUserProfileID() + ") joined group: " + utga.getGroupID());
+        if (getMyGroupsDictionary().get(utga.getGroupID()).getUserAssignments().containsKey(utga.getUserProfileID())) {
+            Log.e(MY_TAG, "user assignment already exists in this group");
+            onUTGAUpdated(utga);
+            return;
+        }
+        HandleUserJoinedGroup(utga);
+    }
+
+    private void onUTGAUpdated(UserToGroupAssignment utga){
+        if (utga == null) {
+            Log.e(MY_TAG, "utga null: getUserAssignmentsToMyGroupsListener onChildAdded");
+            return;
+        }
+        if (!getMyGroupsDictionary().containsKey(utga.getGroupID())) {
+            Log.e(MY_TAG, "group not found: getUserAssignmentsToMyGroupsListener onChildAdded");
+            return;
+        }
+        if (utga.getUserProfileID().equals(SharedPreferencesUtil.GetMyProfileID(getApplicationContext())))
+            return; // my own assignment
+        if (!getMyGroupsDictionary().get(utga.getGroupID()).getUserAssignments().containsKey(utga.getUserProfileID())) {
+            HandleUserJoinedGroup(utga);
+        } else {
+            getMyGroupsDictionary().get(utga.getGroupID()).getUserAssignments().remove(utga.getUserProfileID());
+            getMyGroupsDictionary().get(utga.getGroupID()).getUserAssignments().put(utga.getUserProfileID(), utga);
+            NotifyUserUpdatedLocation(utga);
+        }
     }
 
     private boolean CheckIfThereAreGroupsWithUsers() {

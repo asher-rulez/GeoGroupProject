@@ -66,6 +66,8 @@ public class LocationListenerService extends Service implements GoogleApiClient.
         super.onCreate();
         if (mGoogleApiClient == null)
             buildGoogleApiClient();
+
+        ShowNotificationForForeground();
     }
 
     @Override
@@ -78,8 +80,6 @@ public class LocationListenerService extends Service implements GoogleApiClient.
         Bundle b = new Bundle();
         b.putString("date", new Date().toString());
         FirebaseAnalytics.getInstance(this).logEvent("loc_service_start", b);
-
-        ShowNotificationForForeground();
 
         return Service.START_STICKY;
     }
