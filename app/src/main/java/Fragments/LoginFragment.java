@@ -76,6 +76,13 @@ public class LoginFragment extends Fragment implements View.OnClickListener {
         mListener = null;
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        mListener.SetupMainToolbarTitle(getString(R.string.toolbar_title_fragment_login));
+        mListener.SetMainToolbarGoToMapVisible(true);
+    }
+
     public void SetAfterLoginAction(int actionCode){
         afterLoginAction = actionCode;
     }
@@ -216,7 +223,7 @@ public class LoginFragment extends Fragment implements View.OnClickListener {
 
     //endregion
 
-    public interface OnLoginFragmentInteractionListener {
+    public interface OnLoginFragmentInteractionListener extends ICommonFragmentInteraction {
         void onLoginMade(int afterLoginAction);
     }
 }

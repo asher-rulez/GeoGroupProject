@@ -119,18 +119,6 @@ public class MapFragment extends SupportMapFragment
         }
         mapView.getMapAsync(this);
 
-/*
-        if (view != null) {
-            ViewGroup parent = (ViewGroup) view.getParent();
-            if (parent != null)
-                parent.removeView(view);
-        }
-        try {
-            view = inflater.inflate(R.layout.fragment_map, container, false);
-        } catch (InflateException e) {
-            e.printStackTrace();
-        }
-*/
         return view;
     }
 
@@ -149,6 +137,8 @@ public class MapFragment extends SupportMapFragment
         super.onResume();
         mapView.onResume();
         mListener.showFabsForMap();
+        mListener.SetupMainToolbarTitle(getString(R.string.toolbar_title_fragment_map));
+        mListener.SetMainToolbarGoToMapVisible(false);
     }
 
     @Override
@@ -480,7 +470,7 @@ public class MapFragment extends SupportMapFragment
     public void onCheckAuthorizationCompleted(int actionCode, boolean isAuthorized, String nickName) {
     }
 
-    public interface OnMapFragmentInteractionListener {
+    public interface OnMapFragmentInteractionListener extends ICommonFragmentInteraction {
         //        void showLoginFragmentForAction(int actionCode);
 //
 //        void openCreateJoinGroupFragment(int actionCode);

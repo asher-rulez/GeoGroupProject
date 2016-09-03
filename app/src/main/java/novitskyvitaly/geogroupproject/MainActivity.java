@@ -75,7 +75,11 @@ public class MainActivity extends AppCompatActivity
         MapFragment.OnMapFragmentInteractionListener,
         GeoGroupBroadcastReceiver.IBroadcastReceiverCallback,
         LoginFragment.OnLoginFragmentInteractionListener,
-        CreateJoinGroupFragment.OnCreateJoinGroupInteractionListener, FirebaseUtil.IFirebaseCheckAuthCallback, View.OnClickListener {
+        CreateJoinGroupFragment.OnCreateJoinGroupInteractionListener,
+        FirebaseUtil.IFirebaseCheckAuthCallback,
+        View.OnClickListener,
+        Toolbar.OnMenuItemClickListener,
+        SettingsFragment.ISettingsFragmentInteraction {
 
     private final String MY_TAG = "geog_main_act";
     private final static int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
@@ -99,6 +103,7 @@ public class MainActivity extends AppCompatActivity
     Button btn_side_menu_settings;
     Button btn_side_menu_about;
 
+    TextView tv_toolbar_title;
 
     FloatingActionButton fab_plus;
     FloatingActionButton fab_create_group;
@@ -395,6 +400,8 @@ public class MainActivity extends AppCompatActivity
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
+        toolbar.setOnMenuItemClickListener(this);
+        tv_toolbar_title = (TextView)findViewById(R.id.tv_toolbar_title);
     }
 
     private void InitDrawerSideMenu() {
@@ -571,7 +578,7 @@ public class MainActivity extends AppCompatActivity
                 getSupportFragmentManager().popBackStackImmediate();
             }
             transaction.commit();
-            //SetFabsVisible(true);
+            //tv_toolbar_title.setText(getString(R.string.toolbar_title_fragment_map));
             currentFragmentID = FRAGMENT_ID_MAP;
         } else ScheduleSwitchToFragment(FRAGMENT_ID_MAP, null);
     }
@@ -586,7 +593,7 @@ public class MainActivity extends AppCompatActivity
             transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
             transaction.addToBackStack("login");
             transaction.commit();
-            //SetFabsVisible(false);
+            //tv_toolbar_title.setText(getString(R.string.toolbar_title_fragment_login));
             currentFragmentID = FRAGMENT_ID_LOGIN;
         } else ScheduleSwitchToFragment(FRAGMENT_ID_LOGIN, actionCode);
     }
@@ -601,7 +608,14 @@ public class MainActivity extends AppCompatActivity
             transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
             transaction.addToBackStack("createJoin");
             transaction.commit();
-            //SetFabsVisible(false);
+//            switch (actionCode){
+//                case ACTION_CODE_FOR_CREATE_GROUP:
+//                    tv_toolbar_title.setText(getString(R.string.toolbar_title_fragment_create_group));
+//                    break;
+//                case ACTION_CODE_FOR_JOIN_GROUP:
+//                    tv_toolbar_title.setText(getString(R.string.toolbar_title_fragment_join_group));
+//                    break;
+//            }
             currentFragmentID = FRAGMENT_ID_JOINCREATE;
         } else ScheduleSwitchToFragment(FRAGMENT_ID_JOINCREATE, actionCode);
     }
@@ -612,7 +626,7 @@ public class MainActivity extends AppCompatActivity
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.fl_fragments_container, loadingFragment, FRAGMENT_TAG_LOADING);
         transaction.commit();
-        //SetFabsVisible(false);
+        //tv_toolbar_title.setText(getString(R.string.toolbar_title_fragment_map));
         currentFragmentID = FRAGMENT_ID_LOADING;
     }
 
@@ -624,6 +638,7 @@ public class MainActivity extends AppCompatActivity
         transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
         transaction.addToBackStack("settings");
         transaction.commit();
+        //tv_toolbar_title.setText(getString(R.string.toolbar_title_fragment_settings));
         if (drawer.isDrawerOpen(GravityCompat.START))
             drawer.closeDrawer(GravityCompat.START);
         currentFragmentID = FRAGMENT_ID_SETTINGS;
@@ -1180,7 +1195,27 @@ public class MainActivity extends AppCompatActivity
         isExpanded = false;
     }
 
+    @Override
+    public void SetupMainToolbarTitle(String title) {
+        tv_toolbar_title.setText(title);
+    }
+
+    @Override
+    public void SetMainToolbarGoToMapVisible(boolean ifVisible) {
+        if(ifVisible){
+            toolbar.inflateMenu(R.menu.back_to_map_menu);
+        } else toolbar.getMenu().clear();
+    }
+
+    @Override
+    public boolean onMenuItemClick(MenuItem item) {
+        SwitchToMapFragment();
+        return true;
+    }
+
+
     //endregion
+
 }
 
 //region not used

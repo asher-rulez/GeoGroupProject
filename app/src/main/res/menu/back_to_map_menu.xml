@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="upp.foodonet.material.ExistingPublicationActivity">
+    <item
+        android:id="@+id/menu_back_to_map"
+        android:title="@string/menu_title_back_to_map"
+        android:orderInCategory="1"
+        app:showAsAction="always"
+        android:icon="@drawable/go_to_map_icon"/>
+</menu>
