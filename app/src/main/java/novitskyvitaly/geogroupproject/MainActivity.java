@@ -234,7 +234,7 @@ public class MainActivity extends AppCompatActivity
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         switch (requestCode) {
             case ACTION_CODE_START_SCREEN_ON_STARTUP:
-                CheckAuthorization(this);
+                //CheckAuthorization(this);
                 break;
             case ACTION_CODE_START_LOCATION_REPORT_SERVICE:
                 if (!LocationListenerService.IsServiceRunning)

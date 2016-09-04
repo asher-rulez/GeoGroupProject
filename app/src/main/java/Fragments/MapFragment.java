@@ -324,8 +324,8 @@ public class MapFragment extends SupportMapFragment
     }
 
     private void SetLastLocation(LatLng latLng) {
-        if (latLng != null)
-            SharedPreferencesUtil.SaveLocationInSharedPreferences(getContext(), latLng.latitude, latLng.longitude, new Date());
+//        if (latLng != null)
+//            SharedPreferencesUtil.SaveLocationInSharedPreferences(getContext(), latLng.latitude, latLng.longitude, new Date());
         lastLocation = latLng;
     }
 
@@ -336,8 +336,8 @@ public class MapFragment extends SupportMapFragment
     }
 
     private void SetLastLocation(Location location) {
-        if (location != null)
-            SharedPreferencesUtil.SaveLocationInSharedPreferences(getContext(), location.getLatitude(), location.getLongitude(), new Date());
+//        if (location != null)
+//            SharedPreferencesUtil.SaveLocationInSharedPreferences(getContext(), location.getLatitude(), location.getLongitude(), new Date());
         lastLocation = location == null ? null : new LatLng(location.getLatitude(), location.getLongitude());
     }
 

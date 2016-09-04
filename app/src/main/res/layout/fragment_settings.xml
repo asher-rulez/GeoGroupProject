@@ -8,10 +8,19 @@
     <RelativeLayout
         android:id="@+id/rl_btn_settings_loc_reports_switch"
         android:layout_width="match_parent"
-        android:layout_height="@dimen/settings_item_height">
+        android:layout_height="wrap_content"
+        android:minHeight="@dimen/settings_item_height"
+        style="@style/Widget.AppCompat.Button.Borderless">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:orientation="horizontal">
 
         <TextView
-            android:layout_width="wrap_content"
+            android:layout_width="0dip"
+            android:layout_weight=".8"
             android:layout_height="wrap_content"
             android:text="@string/settings_item_location_reports"
             android:layout_centerVertical="true"
@@ -21,7 +30,8 @@
 
         <CheckBox
             android:id="@+id/cb_settings_location_reports"
-            android:layout_width="wrap_content"
+            android:layout_width="0dip"
+            android:layout_weight=".2"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:layout_alignParentRight="true"
@@ -29,12 +39,15 @@
             android:layout_marginLeft="@dimen/settings_checkbox_left_margin"
             android:clickable="false"/>
 
+        </LinearLayout>
+
     </RelativeLayout>
 
     <RelativeLayout
         android:id="@+id/rl_btn_settings_loc_reports_frequency"
         android:layout_width="match_parent"
-        android:layout_height="@dimen/settings_item_height">
+        android:layout_height="@dimen/settings_item_height"
+        style="@style/Widget.AppCompat.Button.Borderless">
 
         <TextView
             android:layout_width="wrap_content"
@@ -61,7 +74,8 @@
     <RelativeLayout
         android:id="@+id/rl_btn_settings_loc_reports_history"
         android:layout_width="match_parent"
-        android:layout_height="@dimen/settings_item_height">
+        android:layout_height="@dimen/settings_item_height"
+        style="@style/Widget.AppCompat.Button.Borderless">
 
         <TextView
             android:layout_width="wrap_content"
@@ -87,7 +101,8 @@
     <RelativeLayout
         android:id="@+id/rl_btn_settings_loc_reports_background"
         android:layout_width="match_parent"
-        android:layout_height="@dimen/settings_item_height">
+        android:layout_height="@dimen/settings_item_height"
+        style="@style/Widget.AppCompat.Button.Borderless">
 
         <TextView
             android:layout_width="wrap_content"
@@ -113,7 +128,8 @@
     <RelativeLayout
         android:id="@+id/rl_btn_settings_loc_reports_notification"
         android:layout_width="match_parent"
-        android:layout_height="@dimen/settings_item_height">
+        android:layout_height="@dimen/settings_item_height"
+        style="@style/Widget.AppCompat.Button.Borderless">
 
         <TextView
             android:layout_width="wrap_content"
@@ -139,7 +155,8 @@
     <RelativeLayout
         android:id="@+id/rl_btn_settings_keep_screen_on"
         android:layout_width="match_parent"
-        android:layout_height="@dimen/settings_item_height">
+        android:layout_height="@dimen/settings_item_height"
+        style="@style/Widget.AppCompat.Button.Borderless">
 
         <TextView
             android:layout_width="wrap_content"
@@ -165,7 +182,8 @@
     <RelativeLayout
         android:id="@+id/fl_btn_settings_notifications"
         android:layout_width="match_parent"
-        android:layout_height="@dimen/settings_item_height">
+        android:layout_height="@dimen/settings_item_height"
+        style="@style/Widget.AppCompat.Button.Borderless">
 
         <TextView
             android:layout_width="wrap_content"
@@ -181,7 +199,8 @@
     <RelativeLayout
         android:id="@+id/fl_btn_settings_user"
         android:layout_width="match_parent"
-        android:layout_height="@dimen/settings_item_height">
+        android:layout_height="@dimen/settings_item_height"
+        style="@style/Widget.AppCompat.Button.Borderless">
 
         <TextView
             android:layout_width="wrap_content"

@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <integer name="location_refresh_default_frequency_rate_milliseconds">60000</integer>
+    <integer name="location_refresh_default_frequency_rate_milliseconds">300000</integer>
 </resources>
