@@ -1,216 +1,410 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context="Fragments.SettingsFragment"
-    android:orientation="vertical">
+    android:layout_height="match_parent">
 
-    <RelativeLayout
-        android:id="@+id/rl_btn_settings_loc_reports_switch"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:minHeight="@dimen/settings_item_height"
-        style="@style/Widget.AppCompat.Button.Borderless">
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        tools:context="Fragments.SettingsFragment">
 
-        <LinearLayout
+        <RelativeLayout
+            android:id="@+id/rl_btn_settings_loc_reports_switch"
+            style="@style/Widget.AppCompat.Button.Borderless"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_centerVertical="true"
-            android:orientation="horizontal">
+            android:layout_marginTop="16dp"
+            android:minHeight="@dimen/settings_item_height">
 
-        <TextView
-            android:layout_width="0dip"
-            android:layout_weight=".8"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/text_view_settings_item"
+                    android:layout_width="0dip"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="@dimen/settings_left_margin"
+                    android:layout_weight=".9"
+                    android:text="@string/settings_item_location_reports" />
+
+                <RelativeLayout
+                    android:layout_width="0dip"
+                    android:layout_height="match_parent"
+                    android:layout_weight=".1">
+
+                    <CheckBox
+                        android:id="@+id/cb_settings_location_reports"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_centerHorizontal="true"
+                        android:layout_centerVertical="true"
+                        android:clickable="false" />
+
+                </RelativeLayout>
+
+            </LinearLayout>
+
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/rl_btn_settings_loc_reports_frequency"
+            style="@style/Widget.AppCompat.Button.Borderless"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/settings_item_location_reports"
-            android:layout_centerVertical="true"
-            android:layout_alignParentLeft="true"
-            android:layout_marginLeft="@dimen/settings_left_margin"
-            style="@style/text_view_settings_item"/>
+            android:layout_marginTop="16dp"
+            android:minHeight="@dimen/settings_item_height">
 
-        <CheckBox
-            android:id="@+id/cb_settings_location_reports"
-            android:layout_width="0dip"
-            android:layout_weight=".2"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/text_view_settings_item"
+                    android:layout_width="0dip"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="@dimen/settings_left_margin"
+                    android:layout_weight=".7"
+                    android:text="@string/settings_item_location_report_frequency" />
+
+                <RelativeLayout
+                    android:layout_width="0dip"
+                    android:layout_height="match_parent"
+                    android:layout_weight=".3">
+
+                    <TextView
+                        android:id="@+id/tv_settings_report_frequency"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_centerHorizontal="true"
+                        android:layout_centerVertical="true"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="10 seconds"
+                        android:textSize="16sp" />
+
+                </RelativeLayout>
+
+            </LinearLayout>
+
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/rl_btn_settings_loc_reports_history"
+            style="@style/Widget.AppCompat.Button.Borderless"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_centerVertical="true"
-            android:layout_alignParentRight="true"
-            android:layout_marginRight="@dimen/settings_right_margin"
-            android:layout_marginLeft="@dimen/settings_checkbox_left_margin"
-            android:clickable="false"/>
+            android:layout_marginTop="16dp"
+            android:minHeight="@dimen/settings_item_height">
 
-        </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:orientation="horizontal">
 
-    </RelativeLayout>
+                <TextView
+                    style="@style/text_view_settings_item"
+                    android:layout_width="0dip"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="@dimen/settings_left_margin"
+                    android:layout_weight=".9"
+                    android:text="@string/settings_item_save_history" />
 
-    <RelativeLayout
-        android:id="@+id/rl_btn_settings_loc_reports_frequency"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/settings_item_height"
-        style="@style/Widget.AppCompat.Button.Borderless">
+                <RelativeLayout
+                    android:layout_width="0dip"
+                    android:layout_height="match_parent"
+                    android:layout_weight=".1">
 
-        <TextView
-            android:layout_width="wrap_content"
+                    <CheckBox
+                        android:id="@+id/cb_settings_location_reports_history"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_centerHorizontal="true"
+                        android:layout_centerVertical="true"
+                        android:clickable="false" />
+
+                </RelativeLayout>
+
+            </LinearLayout>
+
+        </RelativeLayout>
+
+        <!--    <RelativeLayout
+                android:id="@+id/rl_btn_settings_loc_reports_history"
+                style="@style/Widget.AppCompat.Button.Borderless"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/settings_item_height">
+
+                <TextView
+                    style="@style/text_view_settings_item"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentLeft="true"
+                    android:layout_centerVertical="true"
+                    android:layout_marginLeft="@dimen/settings_left_margin"
+                    android:text="@string/settings_item_save_history" />
+
+                <CheckBox
+                    android:id="@+id/cb_settings_location_reports_history"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentRight="true"
+                    android:layout_centerVertical="true"
+                    android:layout_marginLeft="@dimen/settings_checkbox_left_margin"
+                    android:layout_marginRight="@dimen/settings_right_margin"
+                    android:clickable="false" />
+
+            </RelativeLayout>-->
+
+        <RelativeLayout
+            android:id="@+id/rl_btn_settings_loc_reports_background"
+            style="@style/Widget.AppCompat.Button.Borderless"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/settings_item_location_report_frequency"
-            android:layout_centerVertical="true"
-            android:layout_alignParentLeft="true"
-            android:layout_marginLeft="@dimen/settings_left_margin"
-            style="@style/text_view_settings_item"/>
+            android:layout_marginTop="16dp"
+            android:minHeight="@dimen/settings_item_height">
 
-        <TextView
-            android:id="@+id/tv_settings_report_frequency"
-            android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/text_view_settings_item"
+                    android:layout_width="0dip"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="@dimen/settings_left_margin"
+                    android:layout_weight=".9"
+                    android:text="@string/settings_item_send_reports_from_background" />
+
+                <RelativeLayout
+                    android:layout_width="0dip"
+                    android:layout_height="match_parent"
+                    android:layout_weight=".1">
+
+                    <CheckBox
+                        android:id="@+id/cb_settings_report_when_in_background"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:layout_centerHorizontal="true"
+                        android:layout_centerVertical="true"
+                        android:clickable="false" />
+
+                </RelativeLayout>
+
+            </LinearLayout>
+
+        </RelativeLayout>
+
+        <!--
+            <RelativeLayout
+                android:id="@+id/rl_btn_settings_loc_reports_background"
+                style="@style/Widget.AppCompat.Button.Borderless"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/settings_item_height">
+
+                <TextView
+                    style="@style/text_view_settings_item"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentLeft="true"
+                    android:layout_centerVertical="true"
+                    android:layout_marginLeft="@dimen/settings_left_margin"
+                    android:text="@string/settings_item_send_reports_from_background" />
+
+                <CheckBox
+                    android:id="@+id/cb_settings_report_when_in_background"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentRight="true"
+                    android:layout_centerVertical="true"
+                    android:layout_marginLeft="@dimen/settings_checkbox_left_margin"
+                    android:layout_marginRight="@dimen/settings_right_margin"
+                    android:clickable="false" />
+
+            </RelativeLayout>
+        -->
+
+        <RelativeLayout
+            android:id="@+id/rl_btn_settings_loc_reports_notification"
+            style="@style/Widget.AppCompat.Button.Borderless"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_centerVertical="true"
-            android:layout_alignParentRight="true"
-            android:layout_marginRight="@dimen/settings_right_margin"
-            android:layout_marginLeft="@dimen/settings_checkbox_left_margin"
-            android:fontFamily="sans-serif-medium"
-            android:textSize="16sp"/>
+            android:layout_marginTop="16dp"
+            android:minHeight="@dimen/settings_item_height">
 
-    </RelativeLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:orientation="horizontal">
 
-    <RelativeLayout
-        android:id="@+id/rl_btn_settings_loc_reports_history"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/settings_item_height"
-        style="@style/Widget.AppCompat.Button.Borderless">
+                <TextView
+                    style="@style/text_view_settings_item"
+                    android:layout_width="0dip"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="@dimen/settings_left_margin"
+                    android:layout_weight=".9"
+                    android:text="@string/settings_item_show_notification_background_reports" />
 
-        <TextView
-            android:layout_width="wrap_content"
+                <RelativeLayout
+                    android:layout_width="0dip"
+                    android:layout_height="match_parent"
+                    android:layout_weight=".1">
+
+                    <CheckBox
+                        android:id="@+id/cb_settings_report_notification"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_centerHorizontal="true"
+                        android:layout_centerVertical="true"
+                        android:clickable="false" />
+
+                </RelativeLayout>
+
+            </LinearLayout>
+
+        </RelativeLayout>
+
+        <!--
+            <RelativeLayout
+                android:id="@+id/rl_btn_settings_loc_reports_notification"
+                style="@style/Widget.AppCompat.Button.Borderless"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/settings_item_height">
+
+                <TextView
+                    style="@style/text_view_settings_item"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentLeft="true"
+                    android:layout_centerVertical="true"
+                    android:layout_marginLeft="@dimen/settings_left_margin"
+                    android:text="@string/settings_item_show_notification_background_reports" />
+
+                <CheckBox
+                    android:id="@+id/cb_settings_report_notification"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentRight="true"
+                    android:layout_centerVertical="true"
+                    android:layout_marginLeft="@dimen/settings_checkbox_left_margin"
+                    android:layout_marginRight="@dimen/settings_right_margin"
+                    android:clickable="false" />
+
+            </RelativeLayout>
+        -->
+
+        <RelativeLayout
+            android:id="@+id/rl_btn_settings_keep_screen_on"
+            style="@style/Widget.AppCompat.Button.Borderless"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/settings_item_save_history"
-            android:layout_centerVertical="true"
-            android:layout_alignParentLeft="true"
-            android:layout_marginLeft="@dimen/settings_left_margin"
-            style="@style/text_view_settings_item"/>
+            android:layout_marginTop="16dp"
+            android:minHeight="@dimen/settings_item_height">
 
-        <CheckBox
-            android:id="@+id/cb_settings_location_reports_history"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerVertical="true"
-            android:layout_alignParentRight="true"
-            android:layout_marginRight="@dimen/settings_right_margin"
-            android:layout_marginLeft="@dimen/settings_checkbox_left_margin"
-            android:clickable="false"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:orientation="horizontal">
 
-    </RelativeLayout>
+                <TextView
+                    style="@style/text_view_settings_item"
+                    android:layout_width="0dip"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="@dimen/settings_left_margin"
+                    android:layout_weight=".9"
+                    android:text="@string/settings_item_keep_screen_on" />
 
-    <RelativeLayout
-        android:id="@+id/rl_btn_settings_loc_reports_background"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/settings_item_height"
-        style="@style/Widget.AppCompat.Button.Borderless">
+                <RelativeLayout
+                    android:layout_width="0dip"
+                    android:layout_height="match_parent"
+                    android:layout_weight=".1">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/settings_item_send_reports_from_background"
-            android:layout_centerVertical="true"
-            android:layout_alignParentLeft="true"
-            android:layout_marginLeft="@dimen/settings_left_margin"
-            style="@style/text_view_settings_item"/>
+                    <CheckBox
+                        android:id="@+id/cb_settings_keep_screen_on"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_centerHorizontal="true"
+                        android:layout_centerVertical="true"
+                        android:clickable="false" />
 
-        <CheckBox
-            android:id="@+id/cb_settings_report_when_in_background"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerVertical="true"
-            android:layout_alignParentRight="true"
-            android:layout_marginRight="@dimen/settings_right_margin"
-            android:layout_marginLeft="@dimen/settings_checkbox_left_margin"
-            android:clickable="false"/>
+                </RelativeLayout>
 
-    </RelativeLayout>
+            </LinearLayout>
 
-    <RelativeLayout
-        android:id="@+id/rl_btn_settings_loc_reports_notification"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/settings_item_height"
-        style="@style/Widget.AppCompat.Button.Borderless">
+        </RelativeLayout>
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/settings_item_show_notification_background_reports"
-            android:layout_centerVertical="true"
-            android:layout_alignParentLeft="true"
-            android:layout_marginLeft="@dimen/settings_left_margin"
-            style="@style/text_view_settings_item"/>
+        <!--
+            <RelativeLayout
+                android:id="@+id/rl_btn_settings_keep_screen_on"
+                style="@style/Widget.AppCompat.Button.Borderless"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/settings_item_height">
 
-        <CheckBox
-            android:id="@+id/cb_settings_report_notification"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerVertical="true"
-            android:layout_alignParentRight="true"
-            android:layout_marginRight="@dimen/settings_right_margin"
-            android:layout_marginLeft="@dimen/settings_checkbox_left_margin"
-            android:clickable="false"/>
+                <TextView
+                    style="@style/text_view_settings_item"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentLeft="true"
+                    android:layout_centerVertical="true"
+                    android:layout_marginLeft="@dimen/settings_left_margin"
+                    android:text="@string/settings_item_keep_screen_on" />
 
-    </RelativeLayout>
+                <CheckBox
+                    android:id="@+id/cb_settings_keep_screen_on"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentRight="true"
+                    android:layout_centerVertical="true"
+                    android:layout_marginLeft="@dimen/settings_checkbox_left_margin"
+                    android:layout_marginRight="@dimen/settings_right_margin"
+                    android:clickable="false" />
 
-    <RelativeLayout
-        android:id="@+id/rl_btn_settings_keep_screen_on"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/settings_item_height"
-        style="@style/Widget.AppCompat.Button.Borderless">
+            </RelativeLayout>
+        -->
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/settings_item_keep_screen_on"
-            android:layout_centerVertical="true"
-            android:layout_alignParentLeft="true"
-            android:layout_marginLeft="@dimen/settings_left_margin"
-            style="@style/text_view_settings_item"/>
+        <RelativeLayout
+            android:id="@+id/fl_btn_settings_notifications"
+            style="@style/Widget.AppCompat.Button.Borderless"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/settings_item_height">
 
-        <CheckBox
-            android:id="@+id/cb_settings_keep_screen_on"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerVertical="true"
-            android:layout_alignParentRight="true"
-            android:layout_marginRight="@dimen/settings_right_margin"
-            android:layout_marginLeft="@dimen/settings_checkbox_left_margin"
-            android:clickable="false"/>
+            <TextView
+                style="@style/text_view_settings_item"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="@dimen/settings_left_margin"
+                android:text="@string/settings_item_notifications" />
 
-    </RelativeLayout>
+        </RelativeLayout>
 
-    <RelativeLayout
-        android:id="@+id/fl_btn_settings_notifications"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/settings_item_height"
-        style="@style/Widget.AppCompat.Button.Borderless">
+        <RelativeLayout
+            android:id="@+id/fl_btn_settings_user"
+            style="@style/Widget.AppCompat.Button.Borderless"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/settings_item_height">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/settings_item_notifications"
-            android:layout_centerVertical="true"
-            android:layout_alignParentLeft="true"
-            android:layout_marginLeft="@dimen/settings_left_margin"
-            style="@style/text_view_settings_item"/>
+            <TextView
+                style="@style/text_view_settings_item"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="@dimen/settings_left_margin"
+                android:text="@string/settings_item_user_accont" />
 
-    </RelativeLayout>
+        </RelativeLayout>
 
-    <RelativeLayout
-        android:id="@+id/fl_btn_settings_user"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/settings_item_height"
-        style="@style/Widget.AppCompat.Button.Borderless">
+    </LinearLayout>
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/settings_item_user_accont"
-            android:layout_centerVertical="true"
-            android:layout_alignParentLeft="true"
-            android:layout_marginLeft="@dimen/settings_left_margin"
-            style="@style/text_view_settings_item"/>
-
-    </RelativeLayout>
-
-</LinearLayout>
+</ScrollView>
