@@ -69,6 +69,7 @@ import Utils.CommonUtil;
 import Utils.FirebaseUtil;
 import Utils.GeoGroupBroadcastReceiver;
 import Utils.SharedPreferencesUtil;
+import Utils.UIUtil;
 
 public class MainActivity extends AppCompatActivity
         implements //NavigationView.OnNavigationItemSelectedListener,
@@ -189,7 +190,7 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    private void CheckTokenAndAuth(){
+    private void CheckTokenAndAuth() {
         if (SharedPreferencesUtil.GetFCMTokenFromSharedPreferences(this).equals(""))
             new AsyncTask<Void, Void, Void>() {
                 @Override
@@ -302,9 +303,9 @@ public class MainActivity extends AppCompatActivity
         super.onResume();
     }
 
-    private void ReFindFragments(){
-        mapFragment = (MapFragment)getSupportFragmentManager().findFragmentByTag(FRAGMENT_TAG_MAP);
-        createJoinFragment = (CreateJoinGroupFragment)getSupportFragmentManager().findFragmentByTag(FRAGMENT_TAG_JOINCREATE);
+    private void ReFindFragments() {
+        mapFragment = (MapFragment) getSupportFragmentManager().findFragmentByTag(FRAGMENT_TAG_MAP);
+        createJoinFragment = (CreateJoinGroupFragment) getSupportFragmentManager().findFragmentByTag(FRAGMENT_TAG_JOINCREATE);
         loginFragment = (LoginFragment) getSupportFragmentManager().findFragmentByTag(FRAGMENT_TAG_LOGIN);
         loadingFragment = (LoadingFragment) getSupportFragmentManager().findFragmentByTag(FRAGMENT_TAG_LOADING);
         settingsFragment = (SettingsFragment) getSupportFragmentManager().findFragmentByTag(FRAGMENT_TAG_SETTINGS);
@@ -346,6 +347,8 @@ public class MainActivity extends AppCompatActivity
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
+            if (currentFragmentID == FRAGMENT_ID_LOGIN)
+                return;
             if (currentFragmentID == FRAGMENT_ID_MAP) {
                 Intent intent = new Intent(Intent.ACTION_MAIN);
                 intent.addCategory(Intent.CATEGORY_HOME);
@@ -368,10 +371,10 @@ public class MainActivity extends AppCompatActivity
         super.onSaveInstanceState(outState);
     }
 
-    private void StopListeners(){
-        if(myGroupsQuery != null)
+    private void StopListeners() {
+        if (myGroupsQuery != null)
             myGroupsQuery.removeEventListener(getMyGroupsAssignmentsListener());
-        for(Query q : getUsersByGroupKeyQueries().values())
+        for (Query q : getUsersByGroupKeyQueries().values())
             q.removeEventListener(getUserAssignmentsToMyGroupsListener());
     }
 
@@ -380,9 +383,9 @@ public class MainActivity extends AppCompatActivity
         super.onRestoreInstanceState(savedInstanceState);
         CommonUtil.SetIsApplicationRunningInForeground(this, false);
         getMyGroupsDictionary().putAll(
-                (HashMap<String, Group>)savedInstanceState.getSerializable(SAVED_INSTANCE_STATE_KEY_GROUPS_DICTIONARY));
+                (HashMap<String, Group>) savedInstanceState.getSerializable(SAVED_INSTANCE_STATE_KEY_GROUPS_DICTIONARY));
         getUsersDictionary().putAll(
-                (HashMap<String, User>)savedInstanceState.getSerializable(SAVED_INSTANCE_STATE_KEY_USERS_DICTIONARY));
+                (HashMap<String, User>) savedInstanceState.getSerializable(SAVED_INSTANCE_STATE_KEY_USERS_DICTIONARY));
 //        getUsersByGroupKeyQueries().putAll(
 //                (HashMap<String, Query>)savedInstanceState.getSerializable(SAVED_INSTANCE_STATE_KEY_USERS_BY_GROUP_KEY_QUERIES));
 //        for(Query q : getUsersByGroupKeyQueries().values())
@@ -401,7 +404,7 @@ public class MainActivity extends AppCompatActivity
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
         toolbar.setOnMenuItemClickListener(this);
-        tv_toolbar_title = (TextView)findViewById(R.id.tv_toolbar_title);
+        tv_toolbar_title = (TextView) findViewById(R.id.tv_toolbar_title);
     }
 
     private void InitDrawerSideMenu() {
@@ -639,8 +642,6 @@ public class MainActivity extends AppCompatActivity
         transaction.addToBackStack("settings");
         transaction.commit();
         //tv_toolbar_title.setText(getString(R.string.toolbar_title_fragment_settings));
-        if (drawer.isDrawerOpen(GravityCompat.START))
-            drawer.closeDrawer(GravityCompat.START);
         currentFragmentID = FRAGMENT_ID_SETTINGS;
     }
 
@@ -683,13 +684,13 @@ public class MainActivity extends AppCompatActivity
     @Override
     public ArrayList<UserToGroupAssignment> getUTGAsForShowing() {
         ArrayList<UserToGroupAssignment> result = new ArrayList<>();
-        if(getMyGroupsDictionary() == null || getMyGroupsDictionary().size() == 0)
+        if (getMyGroupsDictionary() == null || getMyGroupsDictionary().size() == 0)
             return result;
-        for(String groupName : getMyGroupsDictionary().keySet()){
+        for (String groupName : getMyGroupsDictionary().keySet()) {
             Group group = getMyGroupsDictionary().get(groupName);
-            if(group.getUserAssignments() == null || group.getUserAssignments().size() == 0)
+            if (group.getUserAssignments() == null || group.getUserAssignments().size() == 0)
                 continue;
-            for(String profileID : group.getUserAssignments().keySet()){
+            for (String profileID : group.getUserAssignments().keySet()) {
                 UserToGroupAssignment utga = new UserToGroupAssignment();
                 utga.setGroupID(group.getGeneratedID());
                 utga.setUserProfileID(profileID);
@@ -811,7 +812,7 @@ public class MainActivity extends AppCompatActivity
                     if (getMyGroupsDictionary().containsKey(utga.getGroupID())) {
                         Log.e(MY_TAG, "group already exists: getMyGroupsAssignmentsListener onChildAdded");
                         Query usersByGroupQ = getUsersByGroupKeyQueries().get(utga.getGroupID());
-                        if(usersByGroupQ == null) {
+                        if (usersByGroupQ == null) {
                             usersByGroupQ = FirebaseUtil.GetUsersOfGroupQuery(getApplicationContext(), utga.getGroupID());
                             getUsersByGroupKeyQueries().put(utga.getGroupID(), usersByGroupQ);
                         }
@@ -947,7 +948,7 @@ public class MainActivity extends AppCompatActivity
         return userAssignmentsToMyGroupsListener;
     }
 
-    private void onUTGAAdded(UserToGroupAssignment utga){
+    private void onUTGAAdded(UserToGroupAssignment utga) {
         if (utga == null) {
             Log.e(MY_TAG, "utga null: getUserAssignmentsToMyGroupsListener onChildAdded");
             return;
@@ -969,7 +970,7 @@ public class MainActivity extends AppCompatActivity
         HandleUserJoinedGroup(utga);
     }
 
-    private void onUTGAUpdated(UserToGroupAssignment utga){
+    private void onUTGAUpdated(UserToGroupAssignment utga) {
         if (utga == null) {
             Log.e(MY_TAG, "utga null: getUserAssignmentsToMyGroupsListener onChildAdded");
             return;
@@ -1121,6 +1122,7 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onClick(View view) {
+        String profileID;
         switch (view.getId()) {
             case R.id.fab_plus:
                 if (isExpanded) {
@@ -1131,16 +1133,49 @@ public class MainActivity extends AppCompatActivity
                 break;
             case R.id.fab_create_group:
                 CollapseFabs();
+                progressDialog = UIUtil.ShowProgressDialog(this, getString(R.string.progress_loading));
                 FirebaseUtil.CheckAuthForActionCode(this, ACTION_CODE_FOR_CREATE_GROUP, this);
                 break;
             case R.id.fab_join_group:
                 CollapseFabs();
+                progressDialog = UIUtil.ShowProgressDialog(this, getString(R.string.progress_loading));
                 FirebaseUtil.CheckAuthForActionCode(this, ACTION_CODE_FOR_JOIN_GROUP, this);
                 break;
             case R.id.btn_side_menu_settings:
-                SwitchToSettingsFragment();
+                profileID = SharedPreferencesUtil.GetMyProfileID(this);
+                if (profileID.equals("")) {
+                    ShowSnackLoginFirst();
+                } else {
+                    progressDialog = UIUtil.ShowProgressDialog(this, getString(R.string.progress_loading));
+                    SwitchToSettingsFragment();
+                }
+                break;
+            case R.id.btn_side_menu_events:
+                profileID = SharedPreferencesUtil.GetMyProfileID(this);
+                if (profileID.equals("")) {
+                    ShowSnackLoginFirst();
+                } else {
+                    progressDialog = UIUtil.ShowProgressDialog(this, getString(R.string.progress_loading));
+                }
+                break;
+            case R.id.btn_side_menu_groups:
+                profileID = SharedPreferencesUtil.GetMyProfileID(this);
+                if (profileID.equals("")) {
+                    ShowSnackLoginFirst();
+                } else {
+                    progressDialog = UIUtil.ShowProgressDialog(this, getString(R.string.progress_loading));
+                }
+                break;
+            case R.id.btn_side_menu_about:
+                progressDialog = UIUtil.ShowProgressDialog(this, getString(R.string.progress_loading));
                 break;
         }
+        if (drawer.isDrawerOpen(GravityCompat.START))
+            drawer.closeDrawer(GravityCompat.START);
+    }
+
+    private void ShowSnackLoginFirst() {
+        Snackbar.make(fab_plus, getString(R.string.snack_message_login_first), Snackbar.LENGTH_SHORT).show();
     }
 
     private void ExpandFabs() {
@@ -1202,9 +1237,13 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void SetMainToolbarGoToMapVisible(boolean ifVisible) {
-        if(ifVisible){
+        toolbar.getMenu().clear();
+        if (ifVisible)
             toolbar.inflateMenu(R.menu.back_to_map_menu);
-        } else toolbar.getMenu().clear();
+        if (progressDialog != null) {
+            progressDialog.dismiss();
+            progressDialog = null;
+        }
     }
 
     @Override

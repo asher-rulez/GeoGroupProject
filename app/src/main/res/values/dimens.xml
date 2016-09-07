@@ -9,7 +9,7 @@
 
     <!-- settings screen -->
 
-    <dimen name="settings_left_margin">16dp</dimen>
+    <dimen name="settings_left_margin">8dp</dimen>
     <dimen name="settings_right_margin">16dp</dimen>
     <dimen name="settings_item_height">56dp</dimen>
     <dimen name="settings_checkbox_left_margin">32dp</dimen>

@@ -80,7 +80,7 @@ public class LoginFragment extends Fragment implements View.OnClickListener {
     public void onResume() {
         super.onResume();
         mListener.SetupMainToolbarTitle(getString(R.string.toolbar_title_fragment_login));
-        mListener.SetMainToolbarGoToMapVisible(true);
+        mListener.SetMainToolbarGoToMapVisible(false);
     }
 
     public void SetAfterLoginAction(int actionCode){

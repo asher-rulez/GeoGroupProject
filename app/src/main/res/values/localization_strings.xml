@@ -57,6 +57,7 @@
     <string name="toolbar_title_fragment_login">Login</string>
     <string name="toolbar_title_fragment_settings">Settings</string>
     <string name="menu_title_back_to_map">Back to map</string>
+    <string name="progress_loading">Loading</string>
 
     <!-- Side menu -->
 
@@ -64,6 +65,7 @@
     <string name="side_menu_btn_events_log">Events log</string>
     <string name="side_menu_btn_settings">Settings</string>
     <string name="side_menu_btn_about">About</string>
+    <string name="snack_message_login_first">Please login first</string>
 
     <!-- location report service -->
 
