@@ -110,8 +110,8 @@ public class MainActivity extends AppCompatActivity
     FloatingActionButton fab_create_group;
     FloatingActionButton fab_join_group;
     boolean isExpanded = false;
-    Animation fab_appear_anim;
-    Animation fab_collapse_anim;
+    //Animation fab_appear_anim;
+    //Animation fab_collapse_anim;
     Animation fab_plus_to_x_rotate_anim;
     Animation fab_x_to_plus_rotate_anim;
 
@@ -467,13 +467,14 @@ public class MainActivity extends AppCompatActivity
         fab_create_group.setOnClickListener(this);
         fab_join_group = (FloatingActionButton) findViewById(R.id.fab_join_group);
         fab_join_group.setOnClickListener(this);
-        fab_appear_anim = AnimationUtils.loadAnimation(this, R.anim.fab_appear);
-        fab_collapse_anim = AnimationUtils.loadAnimation(this, R.anim.fab_collapse);
+        //fab_appear_anim = AnimationUtils.loadAnimation(this, R.anim.fab_appear);
+        //fab_collapse_anim = AnimationUtils.loadAnimation(this, R.anim.fab_collapse);
         fab_plus_to_x_rotate_anim = AnimationUtils.loadAnimation(this, R.anim.fab_rotate_plus_to_x);
         fab_x_to_plus_rotate_anim = AnimationUtils.loadAnimation(this, R.anim.fab_rotate_x_to_plus);
     }
 
     private void SetFabsVisible(boolean isVisible) {
+/*
         if (fab_plus == null) return;
         final View.OnClickListener clickListener = this;
         Animation anim = isVisible ? fab_appear_anim : fab_collapse_anim;
@@ -495,6 +496,20 @@ public class MainActivity extends AppCompatActivity
         });
         fab_plus.startAnimation(anim);
         fab_plus.setClickable(isVisible);
+*/
+        if(isVisible){
+            fab_plus.setVisibility(FloatingActionButton.VISIBLE);
+            fab_create_group.setVisibility(isExpanded ? FloatingActionButton.VISIBLE : FloatingActionButton.GONE);
+            fab_join_group.setVisibility(isExpanded ? FloatingActionButton.VISIBLE : FloatingActionButton.GONE);
+        } else {
+            if(isExpanded)
+                CollapseFabs(true);
+            else {
+                fab_plus.setVisibility(FloatingActionButton.GONE);
+                fab_create_group.setVisibility(FloatingActionButton.GONE);
+                fab_join_group.setVisibility(FloatingActionButton.GONE);
+            }
+        }
     }
 
     //endregion
@@ -1126,18 +1141,18 @@ public class MainActivity extends AppCompatActivity
         switch (view.getId()) {
             case R.id.fab_plus:
                 if (isExpanded) {
-                    CollapseFabs();
+                    CollapseFabs(false);
                 } else {
                     ExpandFabs();
                 }
                 break;
             case R.id.fab_create_group:
-                CollapseFabs();
+                CollapseFabs(false);
                 progressDialog = UIUtil.ShowProgressDialog(this, getString(R.string.progress_loading));
                 FirebaseUtil.CheckAuthForActionCode(this, ACTION_CODE_FOR_CREATE_GROUP, this);
                 break;
             case R.id.fab_join_group:
-                CollapseFabs();
+                CollapseFabs(false);
                 progressDialog = UIUtil.ShowProgressDialog(this, getString(R.string.progress_loading));
                 FirebaseUtil.CheckAuthForActionCode(this, ACTION_CODE_FOR_JOIN_GROUP, this);
                 break;
@@ -1196,15 +1211,51 @@ public class MainActivity extends AppCompatActivity
 
             }
         });
-        fab_join_group.startAnimation(fab_appear_anim);
-        fab_create_group.startAnimation(fab_appear_anim);
+        Animation fab_appear_anim_join = AnimationUtils.loadAnimation(this, R.anim.fab_appear);
+        fab_appear_anim_join.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                fab_join_group.setClickable(false);
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                fab_join_group.setClickable(true);
+                fab_join_group.clearAnimation();
+                fab_join_group.setVisibility(FloatingActionButton.VISIBLE);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+        final Animation fab_appear_anim_create = AnimationUtils.loadAnimation(this, R.anim.fab_appear);
+        fab_appear_anim_create.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                fab_create_group.setClickable(false);
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                fab_create_group.setClickable(true);
+                fab_create_group.clearAnimation();
+                fab_create_group.setVisibility(FloatingActionButton.VISIBLE);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+        fab_join_group.startAnimation(fab_appear_anim_join);
+        fab_create_group.startAnimation(fab_appear_anim_create);
         fab_plus.startAnimation(fab_plus_to_x_rotate_anim);
-        fab_join_group.setClickable(true);
-        fab_create_group.setClickable(true);
         isExpanded = true;
     }
 
-    private void CollapseFabs() {
+    private void CollapseFabs(final boolean makePlusInvisible) {
         final View.OnClickListener clickListener = this;
         fab_x_to_plus_rotate_anim.setAnimationListener(new Animation.AnimationListener() {
             @Override
@@ -1215,6 +1266,8 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onAnimationEnd(Animation animation) {
                 fab_plus.setOnClickListener(clickListener);
+                fab_plus.clearAnimation();
+                if(makePlusInvisible) fab_plus.setVisibility(FloatingActionButton.GONE);
             }
 
             @Override
@@ -1222,11 +1275,46 @@ public class MainActivity extends AppCompatActivity
 
             }
         });
-        fab_join_group.startAnimation(fab_collapse_anim);
-        fab_create_group.startAnimation(fab_collapse_anim);
+        Animation fab_collapse_anim_join = AnimationUtils.loadAnimation(this, R.anim.fab_collapse);
+        Animation fab_collapse_anim_create = AnimationUtils.loadAnimation(this, R.anim.fab_collapse);
+        fab_collapse_anim_join.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                fab_join_group.setClickable(false);
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                fab_join_group.clearAnimation();
+                fab_join_group.setVisibility(FloatingActionButton.GONE);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+        fab_collapse_anim_create.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                fab_create_group.setClickable(false);
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                fab_create_group.clearAnimation();
+                fab_create_group.setVisibility(FloatingActionButton.GONE);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+        fab_join_group.startAnimation(fab_collapse_anim_join);
+        fab_create_group.startAnimation(fab_collapse_anim_create);
         fab_plus.startAnimation(fab_x_to_plus_rotate_anim);
-        fab_join_group.setClickable(false);
-        fab_create_group.setClickable(false);
+
         isExpanded = false;
     }
 

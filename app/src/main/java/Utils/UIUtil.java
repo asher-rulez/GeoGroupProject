@@ -44,6 +44,7 @@ public class UIUtil {
     }
 
     public static void RemoveValidationFromEditText(Context context, EditText field) {
+        if(field == null) return;
         field.getBackground().setColorFilter(ContextCompat.getColor(context, R.color.colorPrimary), PorterDuff.Mode.SRC_ATOP);
         field.setCompoundDrawablesWithIntrinsicBounds(null, null, null, null);
     }
