@@ -39,6 +39,7 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -111,7 +112,7 @@ public class MapFragment extends SupportMapFragment
         view = inflater.inflate(R.layout.fragment_map, container, false);
         mapView = (MapView) view.findViewById(R.id.mv_map);
         mapView.onCreate(savedInstanceState);
-        mapView.onResume();
+        //mapView.onResume();
         try {
             MapsInitializer.initialize(getActivity().getApplicationContext());
         } catch (Exception e) {
@@ -146,12 +147,14 @@ public class MapFragment extends SupportMapFragment
         super.onPause();
         mapView.onPause();
         mListener.hideFabsOnMapPaused();
+        SharedPreferencesUtil.SaveMapStateInSharedPrefs(getContext(), googleMap.getCameraPosition());
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         mapView.onDestroy();
+        SharedPreferencesUtil.ClearSavedMapState(getContext());
     }
 
     @Override
@@ -242,8 +245,11 @@ public class MapFragment extends SupportMapFragment
             googleMap.setOnMarkerClickListener(this);
             googleMap.setOnInfoWindowClickListener(this);
             googleMap.getUiSettings().setMyLocationButtonEnabled(false);
-            TryGetLocationAndCenterMap();
-
+            CameraPosition cameraPosition = SharedPreferencesUtil.GetMapStateFromPrefsAsCameraPosition(getContext());
+            if(cameraPosition != null)
+                googleMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+            else
+                TryGetLocationAndCenterMap();
         }
     }
 

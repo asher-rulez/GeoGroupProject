@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "23986719732-lbdp6bkqa77c5isvsa2i1s1o2dtj2gun.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "novitskyvitaly.geogroupproject",
+            "certificate_hash": "3C8A1F78F07FD08A2E59BBEADE65FEB414E5ED97"
+          }
+        },
+        {
           "client_id": "23986719732-ukn7cbb04m42p9dqnnjnuahfi839jci3.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

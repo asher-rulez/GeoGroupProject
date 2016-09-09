@@ -51,4 +51,13 @@
     <string name="fcm_token_token">fcm_token_token</string>
     <string name="fcm_token_key">fcm_token_key</string>
 
+    <!-- GoogleMap save state -->
+
+    <string name="gmap_state_token">gmap_token</string>
+    <string name="gmap_state_lat">gmap_lat</string>
+    <string name="gmap_state_lng">gmap_lng</string>
+    <string name="gmap_state_zoom">gmap_zoom</string>
+    <string name="gmap_state_bearing">gmap_bearing</string>
+    <string name="gmap_state_tilt">gmap_tilt</string>
+
 </resources>

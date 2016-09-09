@@ -36,9 +36,9 @@ public class FirebaseUtil {
     public static final int FIREBASE_SAVABLE_TYPE_USER_STATUS_UPDATE = 5;
     public static final int FIREBASE_SAVABLE_TYPE_USER_TO_GROUP_ASSIGNMENT = 6;
 
-    public static void CheckAuthForActionCode(final Context ctx, final int actionCode, final IFirebaseCheckAuthCallback callbackListener){
+    public static void CheckAuthForActionCode(final Context ctx, final int actionCode, final IFirebaseCheckAuthCallback callbackListener) {
         final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-            if(user == null) {
+        if (user == null) {
             Query currentUserQuery
                     = FirebaseDatabase.getInstance().getReference().child(ctx.getString(R.string.firebase_child_users))
                     .orderByChild(User.USER_KEY_PROFILEID).equalTo(CommonUtil.GetAndroidID(ctx));
@@ -68,24 +68,24 @@ public class FirebaseUtil {
                 }
             });
         } else {
-            // TODO: get display name saved in fb by google/facebook authorization
+            callbackListener.onCheckAuthorizationCompleted(actionCode, true, user.getDisplayName());
         }
     }
 
-    public static void SaveDataArrayToFirebase(final Context ctx, final ArrayList<IFirebaseSavable> dataArray, final Stack<DatabaseReference> savedObjectsReferences, final IFirebaseSaveArrayOfObjectsCallback callbackListener){
-        if(dataArray.size() == 0){
+    public static void SaveDataArrayToFirebase(final Context ctx, final ArrayList<IFirebaseSavable> dataArray, final Stack<DatabaseReference> savedObjectsReferences, final IFirebaseSaveArrayOfObjectsCallback callbackListener) {
+        if (dataArray.size() == 0) {
             callbackListener.OnSavingFinishedSuccessfully(savedObjectsReferences);
             return;
         }
         final IFirebaseSavable savable = dataArray.get(0);
         DatabaseReference fdRef = FirebaseDatabase.getInstance().getReference();
-        switch (savable.getSavableClassType()){
+        switch (savable.getSavableClassType()) {
             case FIREBASE_SAVABLE_TYPE_GROUP:
-                Group group = (Group)savable;
+                Group group = (Group) savable;
                 fdRef.child(ctx.getString(R.string.firebase_child_groups)).push().setValue(group, new DatabaseReference.CompletionListener() {
                     @Override
                     public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
-                        if(databaseError != null)
+                        if (databaseError != null)
                             RevertStackAndReturnErrorToCallback(savedObjectsReferences, databaseError, callbackListener);
                         else {
                             dataArray.remove(savable);
@@ -104,11 +104,11 @@ public class FirebaseUtil {
             case FIREBASE_SAVABLE_TYPE_USER_STATUS_UPDATE:
                 break;
             case FIREBASE_SAVABLE_TYPE_USER_TO_GROUP_ASSIGNMENT:
-                UserToGroupAssignment utga = (UserToGroupAssignment)savable;
+                UserToGroupAssignment utga = (UserToGroupAssignment) savable;
                 fdRef.child(ctx.getString(R.string.firebase_user_to_group_assignment)).push().setValue(utga, new DatabaseReference.CompletionListener() {
                     @Override
                     public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
-                        if(databaseError != null)
+                        if (databaseError != null)
                             RevertStackAndReturnErrorToCallback(savedObjectsReferences, databaseError, callbackListener);
                         else {
                             dataArray.remove(savable);
@@ -121,12 +121,12 @@ public class FirebaseUtil {
         }
     }
 
-    public static void RevertStackAndReturnErrorToCallback(Stack<DatabaseReference> changesStack, DatabaseError error, IFirebaseSaveArrayOfObjectsCallback callbackListener){
+    public static void RevertStackAndReturnErrorToCallback(Stack<DatabaseReference> changesStack, DatabaseError error, IFirebaseSaveArrayOfObjectsCallback callbackListener) {
         //todo: revert stack
         callbackListener.OnSavingError(error);
     }
 
-    public static void GetActiveGroups(Context ctx, final IFirebaseGetDataCheckCallback callbackListener){
+    public static void GetActiveGroups(Context ctx, final IFirebaseGetDataCheckCallback callbackListener) {
         //todo: here should be method that gets current User profileID from SP
         String profileID = CommonUtil.GetAndroidID(ctx);
 
@@ -138,18 +138,18 @@ public class FirebaseUtil {
         qMyUTGAs.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                if(!dataSnapshot.hasChildren()){
+                if (!dataSnapshot.hasChildren()) {
                     Log.i(MY_TAG, "no active groups found");
                     callbackListener.onGetActiveGroupsCompleted(new ArrayList<Group>());
                     return;
                 }
                 Set<String> groupKeys = new HashSet<String>();
-                for(DataSnapshot dsUTGA : dataSnapshot.getChildren()){
+                for (DataSnapshot dsUTGA : dataSnapshot.getChildren()) {
                     UserToGroupAssignment utga = dsUTGA.getValue(UserToGroupAssignment.class);
-                    if(utga != null)
+                    if (utga != null)
                         groupKeys.add(utga.getGroupID());
                 }
-                if(groupKeys.size() == 0){
+                if (groupKeys.size() == 0) {
                     Log.i(MY_TAG, "resolving group keys from fbdb went wrong");
                     callbackListener.onGetActiveGroupsCompleted(new ArrayList<Group>());
                     return;
@@ -164,28 +164,28 @@ public class FirebaseUtil {
         });
     }
 
-    private void GetUserNamesAndReferencesByGroupKeys(Context ctx, Set<String> groupKeys, ArrayList<Group> groupsResult, IFirebaseGetDataCheckCallback callbackListener){
-        if(groupKeys == null || groupKeys.size() == 0)
+    private void GetUserNamesAndReferencesByGroupKeys(Context ctx, Set<String> groupKeys, ArrayList<Group> groupsResult, IFirebaseGetDataCheckCallback callbackListener) {
+        if (groupKeys == null || groupKeys.size() == 0)
             callbackListener.onGetActiveGroupsCompleted(groupsResult);
         //Query utgaByGroupKeyQuery = FirebaseDatabase.getInstance().getReference().child(ctx.getString(R.string.firebase_user_to_group_assignment)).orderByChild(UserToGroupAssignment.UTGA_KEY_GROUP_ID).
     }
 
-    public static Query GetMyGroupsQuery(Context ctx){
+    public static Query GetMyGroupsQuery(Context ctx) {
         return FirebaseDatabase.getInstance().getReference()
                 .child(ctx.getString(R.string.firebase_user_to_group_assignment))
                 .orderByChild(UserToGroupAssignment.UTGA_KEY_USER_PROFILE_ID)
                 .equalTo(SharedPreferencesUtil.GetMyProfileID(ctx));
     }
 
-    public static void GetSingleGroupReferenceByGroupKey(final Context ctx, final String groupKey, final IFirebaseInitListenersCallback callbackListener){
+    public static void GetSingleGroupReferenceByGroupKey(final Context ctx, final String groupKey, final IFirebaseInitListenersCallback callbackListener) {
         Query singleGroupQuery = GetQueryForSingleGroupByGroupKey(ctx, groupKey);
         singleGroupQuery.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                if(dataSnapshot.hasChildren()){
+                if (dataSnapshot.hasChildren()) {
                     int i = 0;
-                    for(DataSnapshot ds : dataSnapshot.getChildren()){
-                        if(i > 0){
+                    for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                        if (i > 0) {
                             Log.e(MY_TAG, "unexpected amount of groups got by one key!");
                             return;
                         }
@@ -199,6 +199,7 @@ public class FirebaseUtil {
                     }
                 }
             }
+
             @Override
             public void onCancelled(DatabaseError databaseError) {
                 databaseError.toException().printStackTrace();
@@ -206,21 +207,21 @@ public class FirebaseUtil {
         });
     }
 
-    public static Query GetQueryForSingleGroupByGroupKey(Context ctx, String groupKey){
+    public static Query GetQueryForSingleGroupByGroupKey(Context ctx, String groupKey) {
         return FirebaseDatabase.getInstance().getReference()
                 .child(ctx.getString(R.string.firebase_child_groups))
                 .orderByChild(Group.GROUP_KEY_GENERATED_ID)
                 .equalTo(groupKey);
     }
 
-    public static Query GetUsersOfGroupQuery(Context ctx, String groupKey){
+    public static Query GetUsersOfGroupQuery(Context ctx, String groupKey) {
         return FirebaseDatabase.getInstance().getReference()
                 .child(ctx.getString(R.string.firebase_user_to_group_assignment))
                 .orderByChild(UserToGroupAssignment.UTGA_KEY_GROUP_ID)
                 .equalTo(groupKey);
     }
 
-    public static Query GetQueryForSingleUserByUserProfileID(Context ctx, String userProfileID){
+    public static Query GetQueryForSingleUserByUserProfileID(Context ctx, String userProfileID) {
         return FirebaseDatabase.getInstance().getReference()
                 .child(ctx.getString(R.string.firebase_child_users))
                 .orderByChild(User.USER_KEY_PROFILEID)
@@ -229,7 +230,7 @@ public class FirebaseUtil {
 
     //region Callback interfaces
 
-    public interface IFirebaseCheckAuthCallback{
+    public interface IFirebaseCheckAuthCallback {
         //todo: this callback should update nickname and user profileID in SP
         void onCheckAuthorizationCompleted(int actionCode, boolean isAuthorized, String nickName);
     }
@@ -239,12 +240,13 @@ public class FirebaseUtil {
 
     }
 
-    public interface IFirebaseSaveArrayOfObjectsCallback{
+    public interface IFirebaseSaveArrayOfObjectsCallback {
         void OnSavingFinishedSuccessfully(Stack<DatabaseReference> savedObjectsReferences);
+
         void OnSavingError(DatabaseError databaseError);
     }
 
-    public interface IFirebaseInitListenersCallback{
+    public interface IFirebaseInitListenersCallback {
         void OnSingleGroupResolved(Group group);
     }
 

@@ -3,6 +3,7 @@ package Utils;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 
 import java.util.Date;
@@ -142,4 +143,39 @@ public class SharedPreferencesUtil {
         return sp.getString(ctx.getString(R.string.fcm_token_key), "");
     }
 
+    public static void SaveMapStateInSharedPrefs(Context ctx, CameraPosition cameraPosition){
+        SharedPreferences sp = ctx.getSharedPreferences(ctx.getString(R.string.gmap_state_token), Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sp.edit();
+        editor.putFloat(ctx.getString(R.string.gmap_state_lat), (float)cameraPosition.target.latitude);
+        editor.putFloat(ctx.getString(R.string.gmap_state_lng), (float)cameraPosition.target.longitude);
+        editor.putFloat(ctx.getString(R.string.gmap_state_zoom), cameraPosition.zoom);
+        editor.putFloat(ctx.getString(R.string.gmap_state_bearing), cameraPosition.bearing);
+        editor.putFloat(ctx.getString(R.string.gmap_state_tilt), cameraPosition.tilt);
+        editor.commit();
+    }
+
+    public static CameraPosition GetMapStateFromPrefsAsCameraPosition(Context ctx){
+        SharedPreferences sp = ctx.getSharedPreferences(ctx.getString(R.string.gmap_state_token), Context.MODE_PRIVATE);
+        double lat = (double)sp.getFloat(ctx.getString(R.string.gmap_state_lat), -1);
+        if(lat == -1)
+            return null;
+        double lng = (double)sp.getFloat(ctx.getString(R.string.gmap_state_lng), -1);
+        LatLng latLng = new LatLng(lat, lng);
+        float zoom = sp.getFloat(ctx.getString(R.string.gmap_state_zoom), -1);
+        float bearing = sp.getFloat(ctx.getString(R.string.gmap_state_bearing), -1);
+        float tilt = sp.getFloat(ctx.getString(R.string.gmap_state_tilt), -1);
+        CameraPosition cameraPosition = new CameraPosition.Builder()
+                .target(latLng)
+                .zoom(zoom)
+                .bearing(bearing)
+                .tilt(tilt)
+                .build();
+        return cameraPosition;
+    }
+
+    public static void ClearSavedMapState(Context ctx){
+        SharedPreferences sp = ctx.getSharedPreferences(ctx.getString(R.string.gmap_state_token), Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sp.edit();
+        editor.clear();
+    }
 }

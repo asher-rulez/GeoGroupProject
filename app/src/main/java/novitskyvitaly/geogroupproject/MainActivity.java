@@ -339,6 +339,7 @@ public class MainActivity extends AppCompatActivity
             e.printStackTrace();
         }
         SharedPreferencesUtil.SetShouldStopService(this, true);
+        SharedPreferencesUtil.ClearSavedMapState(this);
         super.onDestroy();
     }
 
@@ -394,6 +395,17 @@ public class MainActivity extends AppCompatActivity
 //        myGroupsQuery.addChildEventListener(getMyGroupsAssignmentsListener());
         StartTrackingFirebaseDatabase();
     }
+
+//    @Override
+//    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+//        super.onActivityResult(requestCode, resultCode, data);
+//        switch (requestCode){
+//            case REQUEST_CODE_GOOGLE_SIGNIN:
+//                if(loginFragment != null)
+//                    loginFragment.onActivityResult(requestCode, resultCode, data);
+//                break;
+//        }
+//    }
 
     //endregion
 
