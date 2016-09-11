@@ -33,6 +33,7 @@
     <!-- common -->
     <string name="common_ok">Ok</string>
     <string name="common_cancel">Cancel</string>
+    <string name="common_yes">Yes</string>
 
     <!-- Loading fragment -->
     <string name="loading_fragment_message">Please wait, loading application..</string>
@@ -47,6 +48,7 @@
     <string name="settings_item_notifications">Notifications settings</string>
     <string name="settings_item_user_accont">User account</string>
     <string name="settings_item_save_history">Save location reports history</string>
+    <string name="settings_confirm_turn_off_report_message">This will turn off reporting to groups, are you sure?</string>
 
     <!-- Main activity -->
 

@@ -186,6 +186,7 @@ public class MainActivity extends AppCompatActivity
         InitFABs();
 
         if (savedInstanceState == null) {
+            SharedPreferencesUtil.ClearSavedMapState(this);
             SwitchToLoadingFragment();
         }
     }

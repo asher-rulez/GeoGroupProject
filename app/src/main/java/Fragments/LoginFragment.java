@@ -361,6 +361,35 @@ public class LoginFragment extends Fragment implements View.OnClickListener, Goo
 
     //region firebase
 
+    private void CheckUserInFirebaseBySocialProfileID(final String profileId, final String userName, final int accountTypeID){
+        Query currentUserQuery
+                = FirebaseDatabase.getInstance().getReference().child(getContext().getString(R.string.firebase_child_users))
+                .orderByChild(User.USER_KEY_PROFILEID).equalTo(profileId);
+        currentUserQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (dataSnapshot.hasChildren()) {
+                    for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                        User user1 = ds.getValue(User.class);
+                        if (user1.getProfileID().equals(profileId)) {
+                            String nickname = user1.getUsername();
+                            SharedPreferencesUtil.SaveNicknameInSharedPreferences(getContext(), userName);
+                            SharedPreferencesUtil.SaveProfileIDInSharedPreferences(getContext(), profileId);
+                            mListener.onLoginMade(afterLoginAction);
+                        }
+                    }
+                } else {
+                    SaveUserInFirebase(userName, profileId, accountTypeID);
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                databaseError.toException().printStackTrace();
+            }
+        });
+    }
+
     private void SaveUserInFirebase(final String nickname, final String profileID, final int accountTypeID){
         final DatabaseReference fdRef = FirebaseDatabase.getInstance().getReference().child(getString(R.string.firebase_child_users));
         Query currentUserQuery = fdRef.orderByChild(User.USER_KEY_PROFILEID).equalTo(CommonUtil.GetAndroidID(getContext()));

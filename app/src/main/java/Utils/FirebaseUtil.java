@@ -36,41 +36,82 @@ public class FirebaseUtil {
     public static final int FIREBASE_SAVABLE_TYPE_USER_STATUS_UPDATE = 5;
     public static final int FIREBASE_SAVABLE_TYPE_USER_TO_GROUP_ASSIGNMENT = 6;
 
-    public static void CheckAuthForActionCode(final Context ctx, final int actionCode, final IFirebaseCheckAuthCallback callbackListener) {
+    public static void
+    CheckAuthForActionCode(final Context ctx, final int actionCode, final IFirebaseCheckAuthCallback callbackListener) {
         final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user == null) {
-            Query currentUserQuery
-                    = FirebaseDatabase.getInstance().getReference().child(ctx.getString(R.string.firebase_child_users))
-                    .orderByChild(User.USER_KEY_PROFILEID).equalTo(CommonUtil.GetAndroidID(ctx));
-            currentUserQuery.addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot dataSnapshot) {
-                    if (dataSnapshot.hasChildren()) {
-                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
-                            User user1 = ds.getValue(User.class);
-                            if (user1.getProfileID().equals(CommonUtil.GetAndroidID(ctx))) {
-                                String nickname = user1.getUsername();
-                                SharedPreferencesUtil.SaveNicknameInSharedPreferences(ctx, nickname);
-                                SharedPreferencesUtil.SaveProfileIDInSharedPreferences(ctx, user1.getProfileID());
-                                callbackListener.onCheckAuthorizationCompleted(actionCode, true, nickname);
+            final String profileId = SharedPreferencesUtil.GetMyProfileID(ctx);
+            if(!profileId.equals("")){
+                Query currentUserQuery
+                        = FirebaseDatabase.getInstance().getReference().child(ctx.getString(R.string.firebase_child_users))
+                        .orderByChild(User.USER_KEY_PROFILEID).equalTo(profileId);
+                currentUserQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        if (dataSnapshot.hasChildren()) {
+                            for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                                User user1 = ds.getValue(User.class);
+                                if (user1.getProfileID().equals(profileId)) {
+                                    String nickname = user1.getUsername();
+                                    SharedPreferencesUtil.SaveNicknameInSharedPreferences(ctx, nickname);
+                                    SharedPreferencesUtil.SaveProfileIDInSharedPreferences(ctx, user1.getProfileID());
+                                    callbackListener.onCheckAuthorizationCompleted(actionCode, true, nickname);
+                                }
                             }
+                        } else {
+                            checkAuthByAndroidID(ctx, actionCode, callbackListener);
+                            callbackListener.onCheckAuthorizationCompleted(actionCode, false, null);
                         }
-                    } else {
-                        SharedPreferencesUtil.SaveNicknameInSharedPreferences(ctx, "");
-                        SharedPreferencesUtil.SaveProfileIDInSharedPreferences(ctx, "");
-                        callbackListener.onCheckAuthorizationCompleted(actionCode, false, null);
                     }
-                }
 
-                @Override
-                public void onCancelled(DatabaseError databaseError) {
-                    databaseError.toException().printStackTrace();
-                }
-            });
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+                        databaseError.toException().printStackTrace();
+                    }
+                });
+            }
+            else {
+                checkAuthByAndroidID(ctx, actionCode, callbackListener);
+            }
         } else {
             callbackListener.onCheckAuthorizationCompleted(actionCode, true, user.getDisplayName());
         }
     }
+
+    private static void checkAuthByAndroidID(final Context ctx, final int actionCode, final IFirebaseCheckAuthCallback callbackListener) {
+        Query currentUserQuery
+                = FirebaseDatabase.getInstance().getReference().child(ctx.getString(R.string.firebase_child_users))
+                .orderByChild(User.USER_KEY_PROFILEID).equalTo(CommonUtil.GetAndroidID(ctx));
+        currentUserQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (dataSnapshot.hasChildren()) {
+                    for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                        User user1 = ds.getValue(User.class);
+                        if (user1.getProfileID().equals(CommonUtil.GetAndroidID(ctx))) {
+                            String nickname = user1.getUsername();
+                            SharedPreferencesUtil.SaveNicknameInSharedPreferences(ctx, nickname);
+                            SharedPreferencesUtil.SaveProfileIDInSharedPreferences(ctx, user1.getProfileID());
+                            callbackListener.onCheckAuthorizationCompleted(actionCode, true, nickname);
+                        }
+                    }
+                } else {
+                    SharedPreferencesUtil.SaveNicknameInSharedPreferences(ctx, "");
+                    SharedPreferencesUtil.SaveProfileIDInSharedPreferences(ctx, "");
+                    callbackListener.onCheckAuthorizationCompleted(actionCode, false, null);
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                databaseError.toException().printStackTrace();
+            }
+        });
+    }
+
+//    private static void checkAuthByAndroidID(){
+//
+//    }
 
     public static void SaveDataArrayToFirebase(final Context ctx, final ArrayList<IFirebaseSavable> dataArray, final Stack<DatabaseReference> savedObjectsReferences, final IFirebaseSaveArrayOfObjectsCallback callbackListener) {
         if (dataArray.size() == 0) {

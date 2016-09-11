@@ -213,16 +213,6 @@ public class MapFragment extends SupportMapFragment
 
         ArrayList<UserToGroupAssignment> utgas = mListener.getUTGAsForShowing();
         for (UserToGroupAssignment utga : utgas){
-//            String groupID = utga.getGroupID();
-//            String userProfileID = utga.getUserProfileID();
-//            double lat = utga.getLastReportedLatitude().doubleValue();
-//            double lng = utga.getLastReportedLongitude().doubleValue();
-//            Group g = utga.getGroup();
-//            String groupName = g.getName();
-//            User u = utga.getUser();
-//            String userName = u.getUsername();
-//            Marker m = AddMarker(lat, lng, groupName + ":" + userName, icon);
-//            getMyMarkers().put(groupID + ":" + userProfileID, m);
             getMyMarkers().put(utga.getGroupID() + ":" + utga.getUserProfileID(),
                     AddMarker(utga.getLastReportedLatitude(), utga.getLastReportedLongitude(),
                             utga.getGroup().getName() + ":" + utga.getUser().getUsername(), icon));
@@ -342,8 +332,8 @@ public class MapFragment extends SupportMapFragment
     }
 
     private void SetLastLocation(Location location) {
-//        if (location != null)
-//            SharedPreferencesUtil.SaveLocationInSharedPreferences(getContext(), location.getLatitude(), location.getLongitude(), new Date());
+        if (location != null)
+            SharedPreferencesUtil.SaveLocationInSharedPreferences(getContext(), location.getLatitude(), location.getLongitude(), new Date());
         lastLocation = location == null ? null : new LatLng(location.getLatitude(), location.getLongitude());
     }
 

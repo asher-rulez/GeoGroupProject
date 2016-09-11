@@ -9,10 +9,11 @@
     <string name="is_app_running_in_foreground_token">is_running_token</string>
     <string name="is_app_running_in_foreground_key">is_running_key</string>
 
-    <!-- Location refresh frequency -->
+    <!-- Application settings -->
 
-    <string name="location_refresh_frequency_token">location_refresh_token</string>
+    <string name="app_settings_token">app_settings_token</string>
     <string name="location_refresh_frequency_key">location_refresh_key</string>
+    <string name="if_report_location">report_location</string>
 
     <!-- Last location saved -->
 

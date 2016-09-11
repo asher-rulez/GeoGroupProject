@@ -3,16 +3,21 @@ package Fragments;
 
 import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.CheckResult;
 import android.support.annotation.IntegerRes;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v7.app.AlertDialog;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.CheckBox;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -27,6 +32,8 @@ import java.util.Map;
 import java.util.Set;
 
 import Utils.SharedPreferencesUtil;
+import novitskyvitaly.geogroupproject.GeoGroupProjectApplication;
+import novitskyvitaly.geogroupproject.LocationListenerService;
 import novitskyvitaly.geogroupproject.R;
 
 public class SettingsFragment extends Fragment implements View.OnClickListener {
@@ -34,6 +41,10 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
     ISettingsFragmentInteraction mListener;
 
     RelativeLayout rl_btn_set_frequency;
+
+    RelativeLayout rl_btn_if_report_location;
+    CheckBox cb_if_report_location;
+
     TextView tv_frequency_title;
 
     public SettingsFragment() {
@@ -62,6 +73,7 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+        InitIfReportLocationSwitch();
         InitButtonSelectFrequency();
     }
 
@@ -78,8 +90,45 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
             case R.id.rl_btn_settings_loc_reports_frequency:
                 ShowChooseFrequencyDialog();
                 break;
+            case R.id.rl_btn_settings_loc_reports_switch:
+                if(SharedPreferencesUtil.GetIfReportLocationFromSharedPreferences(getContext()))
+                    ShowConfirmationDialogForReportLocationSwitch();
+                else{
+                    SharedPreferencesUtil.SetIfReportLocation(getContext(),true);
+                    cb_if_report_location.setChecked(true);
+                }
+                break;
         }
     }
+
+    //region if report location switch
+
+    private void InitIfReportLocationSwitch(){
+        rl_btn_if_report_location = (RelativeLayout) getView().findViewById(R.id.rl_btn_settings_loc_reports_switch);
+        rl_btn_if_report_location.setOnClickListener(this);
+        cb_if_report_location = (CheckBox) getView().findViewById(R.id.cb_settings_location_reports);
+        cb_if_report_location.setChecked(SharedPreferencesUtil.GetIfReportLocationFromSharedPreferences(getContext()));
+    }
+
+    private void ShowConfirmationDialogForReportLocationSwitch(){
+        new AlertDialog.Builder(getContext())
+                .setMessage(R.string.settings_confirm_turn_off_report_message)
+                .setNegativeButton(R.string.common_cancel, null)
+                .setPositiveButton(R.string.common_yes, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        SharedPreferencesUtil.SetIfReportLocation(getContext(),false);
+                        cb_if_report_location.setChecked(false);
+                        if(LocationListenerService.IsServiceRunning)
+                            GeoGroupProjectApplication.getInstance().stopLocationReportService();
+                        dialogInterface.dismiss();
+                    }
+                })
+                .create()
+                .show();
+    }
+
+    //endregion
 
     //region loc report frequency
 
@@ -115,6 +164,11 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
                 tv_frequency_title.setText(frequencyTitles.get(i));
                 frequencyDialog.dismiss();
                 SharedPreferencesUtil.SetLocationRefreshFrequency(getContext(), getFrequencyOptions().get(frequencyTitles.get(i)));
+                if(LocationListenerService.IsServiceRunning){
+                    GeoGroupProjectApplication.getInstance().stopLocationReportService();
+                    Intent serviceIntent = new Intent(getContext(), LocationListenerService.class);
+                    getContext().startService(serviceIntent);
+                }
             }
         });
         frequencyDialog.show();

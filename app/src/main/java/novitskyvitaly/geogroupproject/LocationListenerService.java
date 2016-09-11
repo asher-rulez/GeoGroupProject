@@ -51,14 +51,22 @@ public class LocationListenerService extends Service implements GoogleApiClient.
 
     public static boolean IsServiceRunning;
     public static boolean IsLocationListenerConnected;
+    public static boolean IsRestarting;
 
     Location mLastLocation;
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
 
     public static void startLocationListenerService(Context context) {
+        if(!SharedPreferencesUtil.GetIfReportLocationFromSharedPreferences(context))
+            return;
         Intent intent = new Intent(context.getApplicationContext(), LocationListenerService.class);
         context.startService(intent);
+    }
+
+    public static void restartLocationListenerService(Context context){
+        IsRestarting = true;
+        startLocationListenerService(context);
     }
 
     @Override
