@@ -34,6 +34,7 @@ import com.google.firebase.database.OnDisconnect;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -52,21 +53,76 @@ public class LocationListenerService extends Service implements GoogleApiClient.
     public static boolean IsServiceRunning;
     public static boolean IsLocationListenerConnected;
     public static boolean IsRestarting;
+    public static boolean IfNotReportingInBackground;
 
     Location mLastLocation;
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
 
     public static void startLocationListenerService(Context context) {
-        if(!SharedPreferencesUtil.GetIfReportLocationFromSharedPreferences(context))
+        if (!SharedPreferencesUtil.GetIfReportLocationFromSharedPreferences(context))
             return;
         Intent intent = new Intent(context.getApplicationContext(), LocationListenerService.class);
         context.startService(intent);
     }
 
-    public static void restartLocationListenerService(Context context){
+    public static void restartLocationListenerService(Context context) {
         IsRestarting = true;
         startLocationListenerService(context);
+    }
+
+    public static void checkFirebaseAndStartServiceIfNeeded(final Context context) {
+        Query myGroupsQuery = FirebaseUtil.GetMyGroupsQuery(context);
+        myGroupsQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (dataSnapshot.hasChildren()) {
+                    ArrayList<UserToGroupAssignment> userToGroupAssignments = new ArrayList<>();
+                    for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                        UserToGroupAssignment utga = ds.getValue(UserToGroupAssignment.class);
+                        utga.setKey(ds.getKey());
+                        userToGroupAssignments.add(utga);
+                    }
+                    checkUsersOfGroupAndStartServiceRecursive(context, userToGroupAssignments);
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                databaseError.toException().printStackTrace();
+            }
+        });
+    }
+
+    private static void checkUsersOfGroupAndStartServiceRecursive(final Context ctx, final ArrayList<UserToGroupAssignment> utgas) {
+        if (utgas.size() == 0) return;
+        UserToGroupAssignment utga = utgas.get(0);
+        utgas.remove(0);
+        Query usersOfGroup = FirebaseUtil.GetUsersOfGroupQuery(ctx, utga.getGroupID());
+        usersOfGroup.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (!dataSnapshot.hasChildren()) {
+                    checkUsersOfGroupAndStartServiceRecursive(ctx, utgas);
+                    return;
+                }
+                for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                    UserToGroupAssignment userUtga = ds.getValue(UserToGroupAssignment.class);
+                    if (userUtga.getUserProfileID().equals(SharedPreferencesUtil.GetMyProfileID(ctx)))
+                        continue;
+                    else {
+                        startLocationListenerService(ctx);
+                        return;
+                    }
+                }
+                checkUsersOfGroupAndStartServiceRecursive(ctx, utgas);
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                databaseError.toException().printStackTrace();
+            }
+        });
     }
 
     @Override
@@ -92,13 +148,18 @@ public class LocationListenerService extends Service implements GoogleApiClient.
         return Service.START_STICKY;
     }
 
-    private void ShowNotificationForForeground(){
+    private void ShowNotificationForForeground() {
+        Notification notification = getForegrountNotification(getString(R.string.location_service_notification_title));
+        startForeground(100, notification);
+    }
+
+    private Notification getForegrountNotification(String notificationText){
         Intent notificationIntent = new Intent(this, MainActivity.class);
         //notificationIntent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
         Bitmap icon = BitmapFactory.decodeResource(getResources(), R.drawable.logo_colors);
-        Notification notification = new NotificationCompat.Builder(this)
-                .setContentTitle(getString(R.string.location_service_notification_title))
+        return new NotificationCompat.Builder(this)
+                .setContentTitle(notificationText)
                 .setTicker(getString(R.string.location_service_notification_ticker))
                 .setContentText(getString(R.string.location_service_notification_content))
                 .setSmallIcon(R.drawable.logo_colors)
@@ -106,7 +167,6 @@ public class LocationListenerService extends Service implements GoogleApiClient.
                 .setContentIntent(pendingIntent)
                 .setOngoing(true)
                 .build();
-        startForeground(100, notification);
     }
 
     @Override
@@ -118,7 +178,7 @@ public class LocationListenerService extends Service implements GoogleApiClient.
         b.putString("date", new Date().toString());
         StackTraceElement[] st = Thread.currentThread().getStackTrace();
         StringBuilder sb = new StringBuilder();
-        for(int i = 0; i < 10 && i < st.length; i++)
+        for (int i = 0; i < 10 && i < st.length; i++)
             sb.append(st[i].toString() + ";\n");
         b.putString("trace", sb.toString());
         FirebaseAnalytics.getInstance(this).logEvent("loc_service_stop", b);
@@ -185,6 +245,12 @@ public class LocationListenerService extends Service implements GoogleApiClient.
     @Override
     public void onLocationChanged(Location location) {
         IsLocationListenerConnected = true;
+        if(!CommonUtil.GetIsApplicationRunningInForeground(getBaseContext())
+                && !SharedPreferencesUtil.GetIfReportInBackground(getBaseContext())){
+            stopForeground(true);
+            stopSelf();
+            return;
+        }
         if (location == null) return;
         Log.i(MY_TAG, "onLocationChanged");
         SendLocationUpdatesToFirebase(location);
@@ -203,18 +269,18 @@ public class LocationListenerService extends Service implements GoogleApiClient.
         buildGoogleApiClient();
     }
 
-    private void SendLocationUpdatesToFirebase(final Location location){
+    private void SendLocationUpdatesToFirebase(final Location location) {
         final Query myAssignmentsToGroups = FirebaseUtil.GetMyGroupsQuery(this);
         myAssignmentsToGroups.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot ds) {
-                if(!ds.hasChildren()){
+                if (!ds.hasChildren()) {
                     Log.e(MY_TAG, "got no group assignments");
                     return;
                 }
-                for(DataSnapshot dataSnapshot : ds.getChildren()){
+                for (DataSnapshot dataSnapshot : ds.getChildren()) {
                     UserToGroupAssignment utga = dataSnapshot.getValue(UserToGroupAssignment.class);
-                    if(utga == null){
+                    if (utga == null) {
                         Log.e(MY_TAG, "got null utga from query");
                         return;
                     }
@@ -227,26 +293,28 @@ public class LocationListenerService extends Service implements GoogleApiClient.
                             .setValue(utga, new DatabaseReference.CompletionListener() {
                                 @Override
                                 public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
-                                    if(databaseError != null)
+                                    if (databaseError != null)
                                         databaseError.toException().printStackTrace();
                                 }
                             });
-                    UserLocationReport locationReport = new UserLocationReport();
-                    locationReport.setGroupID(utga.getGroupID());
-                    locationReport.setUserProfileID(utga.getUserProfileID());
-                    locationReport.setLat(location.getLatitude());
-                    locationReport.setLng(location.getLongitude());
-                    locationReport.setCreatedUnixTime(new Date().getTime());
-                    FirebaseDatabase.getInstance().getReference()
-                            .child(getString(R.string.firebase_location_reports))
-                            .push()
-                            .setValue(locationReport, new DatabaseReference.CompletionListener() {
-                                @Override
-                                public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
-                                    if(databaseError != null)
-                                        databaseError.toException().printStackTrace();
-                                }
-                    });
+                    if(SharedPreferencesUtil.GetIfSaveHistory(getBaseContext())){
+                        UserLocationReport locationReport = new UserLocationReport();
+                        locationReport.setGroupID(utga.getGroupID());
+                        locationReport.setUserProfileID(utga.getUserProfileID());
+                        locationReport.setLat(location.getLatitude());
+                        locationReport.setLng(location.getLongitude());
+                        locationReport.setCreatedUnixTime(new Date().getTime());
+                        FirebaseDatabase.getInstance().getReference()
+                                .child(getString(R.string.firebase_location_reports))
+                                .push()
+                                .setValue(locationReport, new DatabaseReference.CompletionListener() {
+                                    @Override
+                                    public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
+                                        if (databaseError != null)
+                                            databaseError.toException().printStackTrace();
+                                    }
+                                });
+                    }
                 }
             }
 

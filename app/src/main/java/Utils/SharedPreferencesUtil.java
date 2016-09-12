@@ -19,17 +19,17 @@ public class SharedPreferencesUtil {
     public static void SetLocationRefreshFrequency(Context ctx, int frequencyMillis) {
         SharedPreferences sp = ctx.getSharedPreferences(ctx.getString(R.string.app_settings_token), Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sp.edit();
-        editor.putInt(ctx.getString(R.string.location_refresh_frequency_key), frequencyMillis);
+        editor.putInt(ctx.getString(R.string.sp_key_location_refresh_frequency_key), frequencyMillis);
         editor.commit();
     }
 
     public static int GetLocationRefreshFrequency(Context ctx) {
         SharedPreferences sp = ctx.getSharedPreferences(ctx.getString(R.string.app_settings_token), Context.MODE_PRIVATE);
-        int fr = sp.getInt(ctx.getString(R.string.location_refresh_frequency_key), -1);
+        int fr = sp.getInt(ctx.getString(R.string.sp_key_location_refresh_frequency_key), -1);
         if (fr == -1) {
             fr = ctx.getResources().getInteger(R.integer.location_refresh_default_frequency_rate_milliseconds);
             SharedPreferences.Editor editor = sp.edit();
-            editor.putInt(ctx.getString(R.string.location_refresh_frequency_key), fr);
+            editor.putInt(ctx.getString(R.string.sp_key_location_refresh_frequency_key), fr);
             editor.commit();
         }
         return fr;
@@ -38,16 +38,52 @@ public class SharedPreferencesUtil {
     public static void SetIfReportLocation(Context ctx, boolean ifReport) {
         SharedPreferences sp = ctx.getSharedPreferences(ctx.getString(R.string.app_settings_token), Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sp.edit();
-        editor.putBoolean(ctx.getString(R.string.if_report_location), ifReport);
+        editor.putBoolean(ctx.getString(R.string.sp_key_if_report_location), ifReport);
         editor.commit();
     }
 
     public static boolean GetIfReportLocationFromSharedPreferences(Context ctx) {
         SharedPreferences sp = ctx.getSharedPreferences(ctx.getString(R.string.app_settings_token), Context.MODE_PRIVATE);
-        boolean result = sp.getBoolean(ctx.getString(R.string.if_report_location), true);
+        boolean result = sp.getBoolean(ctx.getString(R.string.sp_key_if_report_location), true);
         if (result) {
             SharedPreferences.Editor editor = sp.edit();
-            editor.putBoolean(ctx.getString(R.string.if_report_location), true);
+            editor.putBoolean(ctx.getString(R.string.sp_key_if_report_location), true);
+            editor.commit();
+        }
+        return result;
+    }
+
+    public static void SetIfSaveHistory(Context ctx, boolean ifSaveHistory){
+        SharedPreferences sp = ctx.getSharedPreferences(ctx.getString(R.string.app_settings_token), Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sp.edit();
+        editor.putBoolean(ctx.getString(R.string.sp_key_if_save_history), ifSaveHistory);
+        editor.commit();
+    }
+
+    public static boolean GetIfSaveHistory(Context ctx){
+        SharedPreferences sp = ctx.getSharedPreferences(ctx.getString(R.string.app_settings_token), Context.MODE_PRIVATE);
+        boolean result = sp.getBoolean(ctx.getString(R.string.sp_key_if_save_history), true);
+        if (result) {
+            SharedPreferences.Editor editor = sp.edit();
+            editor.putBoolean(ctx.getString(R.string.sp_key_if_save_history), true);
+            editor.commit();
+        }
+        return result;
+    }
+
+    public static void SetIfReportInBackground(Context ctx, boolean ifSaveHistory){
+        SharedPreferences sp = ctx.getSharedPreferences(ctx.getString(R.string.app_settings_token), Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sp.edit();
+        editor.putBoolean(ctx.getString(R.string.sp_key_if_report_in_background), ifSaveHistory);
+        editor.commit();
+    }
+
+    public static boolean GetIfReportInBackground(Context ctx){
+        SharedPreferences sp = ctx.getSharedPreferences(ctx.getString(R.string.app_settings_token), Context.MODE_PRIVATE);
+        boolean result = sp.getBoolean(ctx.getString(R.string.sp_key_if_report_in_background), true);
+        if (result) {
+            SharedPreferences.Editor editor = sp.edit();
+            editor.putBoolean(ctx.getString(R.string.sp_key_if_report_in_background), true);
             editor.commit();
         }
         return result;

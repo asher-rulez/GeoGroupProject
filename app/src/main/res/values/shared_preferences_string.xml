@@ -12,8 +12,10 @@
     <!-- Application settings -->
 
     <string name="app_settings_token">app_settings_token</string>
-    <string name="location_refresh_frequency_key">location_refresh_key</string>
-    <string name="if_report_location">report_location</string>
+    <string name="sp_key_location_refresh_frequency_key">location_refresh_key</string>
+    <string name="sp_key_if_report_location">report_location</string>
+    <string name="sp_key_if_save_history">save_history</string>
+    <string name="sp_key_if_report_in_background">report_background</string>
 
     <!-- Last location saved -->
 

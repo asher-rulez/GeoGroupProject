@@ -793,7 +793,9 @@ public class MainActivity extends AppCompatActivity
 
     //region location report service
 
-    private void StartLocationReportService() {
+    private synchronized void StartLocationReportService() {
+        if(LocationListenerService.IsServiceRunning)
+            return;
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                 || ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             CommonUtil.RequestLocationPermissions(this, 0);
@@ -987,8 +989,7 @@ public class MainActivity extends AppCompatActivity
         }
         if (utga.getUserProfileID().equals(SharedPreferencesUtil.GetMyProfileID(getApplicationContext())))
             return; // my own assignment
-        if (!LocationListenerService.IsServiceRunning)
-            StartLocationReportService();
+        StartLocationReportService();
         Log.i(MY_TAG, "got user (" + utga.getUserProfileID() + ") joined group: " + utga.getGroupID());
         if (getMyGroupsDictionary().get(utga.getGroupID()).getUserAssignments().containsKey(utga.getUserProfileID())) {
             Log.e(MY_TAG, "user assignment already exists in this group");
@@ -1068,13 +1069,93 @@ public class MainActivity extends AppCompatActivity
             mapFragment.AddMarkerForNewUser(user, group, utga.getLastReportedLatitude(), utga.getLastReportedLongitude());
     }
 
-    private void NotifyUserUpdatedLocation(UserToGroupAssignment utga) {
+    private void NotifyUserUpdatedLocation(final UserToGroupAssignment utga) {
         Log.i(MY_TAG, "notified user updated location");
-        if (mapFragment != null) {//todo: add check if I'm tracking this group
-            User user = getUsersDictionary().get(utga.getUserProfileID());
-            Group group = getMyGroupsDictionary().get(utga.getGroupID());
-            mapFragment.MoveMarker(user.getProfileID(), group.getGeneratedID(), utga.getLastReportedLatitude(), utga.getLastReportedLongitude());
-        }
+            final User user = getUsersDictionary().get(utga.getUserProfileID());
+            if(user == null){
+                FirebaseUtil.GetQueryForSingleUserByUserProfileID(getApplicationContext(), utga.getUserProfileID())
+                        .addListenerForSingleValueEvent(new ValueEventListener() {
+                            @Override
+                            public void onDataChange(DataSnapshot dataSnapshot) {
+                                int i = 0;
+                                for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                                    if (i > 0) {
+                                        Log.e(MY_TAG, "unexpected amount of users got by one profileID!");
+                                        return;
+                                    }
+                                    final User user1 = ds.getValue(User.class);
+                                    user1.setKey(ds.getKey());
+                                    getUsersDictionary().put(user1.getProfileID(), user1);
+                                    i++;
+                                    Group group = getMyGroupsDictionary().get(utga.getGroupID());
+                                    if(group == null){
+                                        FirebaseUtil.GetQueryForSingleGroupByGroupKey(getApplicationContext(), utga.getGroupID())
+                                                .addListenerForSingleValueEvent(new ValueEventListener() {
+                                                    @Override
+                                                    public void onDataChange(DataSnapshot dataSnapshot) {
+                                                        int j = 0;
+                                                        for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                                                            if (j > 0) {
+                                                                Log.e(MY_TAG, "unexpected amount of groups got by one key!");
+                                                                return;
+                                                            }
+                                                            Group group = ds.getValue(Group.class);
+                                                            group.setKey(ds.getKey());
+                                                            getMyGroupsDictionary().put(group.getGeneratedID(), group);
+                                                            MoveMarkerOnMap(user1.getProfileID(), group.getGeneratedID(), utga.getLastReportedLatitude(), utga.getLastReportedLongitude());
+                                                            j++;
+                                                        }
+                                                    }
+
+                                                    @Override
+                                                    public void onCancelled(DatabaseError databaseError) {
+                                                        databaseError.toException().printStackTrace();
+                                                    }
+                                                });
+                                    } else
+                                        MoveMarkerOnMap(user1.getProfileID(), group.getGeneratedID(), utga.getLastReportedLatitude(), utga.getLastReportedLongitude());
+                                }
+                            }
+
+                            @Override
+                            public void onCancelled(DatabaseError databaseError) {
+                                databaseError.toException().printStackTrace();
+                            }
+                        });
+            } else {
+                Group group = getMyGroupsDictionary().get(utga.getGroupID());
+                if(group == null){
+                    FirebaseUtil.GetQueryForSingleGroupByGroupKey(getApplicationContext(), utga.getGroupID())
+                            .addListenerForSingleValueEvent(new ValueEventListener() {
+                                @Override
+                                public void onDataChange(DataSnapshot dataSnapshot) {
+                                    int j = 0;
+                                    for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                                        if (j > 0) {
+                                            Log.e(MY_TAG, "unexpected amount of groups got by one key!");
+                                            return;
+                                        }
+                                        Group group = ds.getValue(Group.class);
+                                        group.setKey(ds.getKey());
+                                        getMyGroupsDictionary().put(group.getGeneratedID(), group);
+                                        MoveMarkerOnMap(user.getProfileID(), group.getGeneratedID(), utga.getLastReportedLatitude(), utga.getLastReportedLongitude());
+                                        j++;
+                                    }
+                                }
+
+                                @Override
+                                public void onCancelled(DatabaseError databaseError) {
+                                    databaseError.toException().printStackTrace();
+                                }
+                            });
+                } else
+                    MoveMarkerOnMap(user.getProfileID(), group.getGeneratedID(), utga.getLastReportedLatitude(), utga.getLastReportedLongitude());
+            }
+    }
+
+    private void MoveMarkerOnMap(String userName, String groupName, double lat, double lng){
+        if(mapFragment != null)//todo: add check if I'm tracking this group
+            mapFragment.MoveMarker(userName, groupName, lat, lng);
     }
 
     private void NotifyUserLeftGroup(UserToGroupAssignment utga) {

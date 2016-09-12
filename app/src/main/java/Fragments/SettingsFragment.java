@@ -5,6 +5,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.CheckResult;
 import android.support.annotation.IntegerRes;
@@ -45,6 +46,12 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
     RelativeLayout rl_btn_if_report_location;
     CheckBox cb_if_report_location;
 
+    RelativeLayout rl_btn_if_save_history;
+    CheckBox cb_if_save_history;
+
+    RelativeLayout rl_btn_if_report_background;
+    CheckBox cb_if_report_background;
+
     TextView tv_frequency_title;
 
     public SettingsFragment() {
@@ -75,6 +82,8 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
         super.onActivityCreated(savedInstanceState);
         InitIfReportLocationSwitch();
         InitButtonSelectFrequency();
+        InitIfSaveHistory();
+        InitIfReportFromBackground();
     }
 
     @Override
@@ -96,7 +105,21 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
                 else{
                     SharedPreferencesUtil.SetIfReportLocation(getContext(),true);
                     cb_if_report_location.setChecked(true);
+                    new AsyncTask<Void,Void,Void>(){
+                        @Override
+                        protected Void doInBackground(Void... voids) {
+                            if(!LocationListenerService.IsServiceRunning)
+                                LocationListenerService.checkFirebaseAndStartServiceIfNeeded(getContext());
+                            return null;
+                        }
+                    }.execute();
                 }
+                break;
+            case R.id.rl_btn_settings_loc_reports_history:
+                SwitchIfSaveHistory();
+                break;
+            case R.id.rl_btn_settings_loc_reports_background:
+                SwitchIfReportFromBackground();
                 break;
         }
     }
@@ -107,6 +130,7 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
         rl_btn_if_report_location = (RelativeLayout) getView().findViewById(R.id.rl_btn_settings_loc_reports_switch);
         rl_btn_if_report_location.setOnClickListener(this);
         cb_if_report_location = (CheckBox) getView().findViewById(R.id.cb_settings_location_reports);
+        cb_if_report_location.setClickable(false);
         cb_if_report_location.setChecked(SharedPreferencesUtil.GetIfReportLocationFromSharedPreferences(getContext()));
     }
 
@@ -217,6 +241,42 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
             }
         }
         return result;
+    }
+
+    //endregion
+
+    //region Save history
+
+    private void InitIfSaveHistory(){
+        rl_btn_if_save_history = (RelativeLayout)getView().findViewById(R.id.rl_btn_settings_loc_reports_history);
+        rl_btn_if_save_history.setOnClickListener(this);
+        cb_if_save_history = (CheckBox)getView().findViewById(R.id.cb_settings_location_reports_history);
+        cb_if_save_history.setClickable(false);
+        cb_if_save_history.setChecked(SharedPreferencesUtil.GetIfSaveHistory(getContext()));
+    }
+
+    private void SwitchIfSaveHistory(){
+        boolean currentValue = SharedPreferencesUtil.GetIfSaveHistory(getContext());
+        SharedPreferencesUtil.SetIfSaveHistory(getContext(), !currentValue);
+        cb_if_save_history.setChecked(!currentValue);
+    }
+
+    //endregion
+
+    //region If report from background
+
+    private void InitIfReportFromBackground(){
+        rl_btn_if_report_background = (RelativeLayout)getView().findViewById(R.id.rl_btn_settings_loc_reports_background);
+        rl_btn_if_report_background.setOnClickListener(this);
+        cb_if_report_background = (CheckBox)getView().findViewById(R.id.cb_settings_report_when_in_background);
+        cb_if_report_background.setClickable(false);
+        cb_if_report_background.setChecked(SharedPreferencesUtil.GetIfReportInBackground(getContext()));
+    }
+
+    private void SwitchIfReportFromBackground(){
+        boolean currentValue = SharedPreferencesUtil.GetIfReportInBackground(getContext());
+        SharedPreferencesUtil.SetIfReportInBackground(getContext(), !currentValue);
+        cb_if_report_background.setChecked(!currentValue);
     }
 
     //endregion
