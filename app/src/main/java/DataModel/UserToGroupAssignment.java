@@ -99,14 +99,14 @@ public class UserToGroupAssignment implements IFirebaseSavable, Comparable<UserT
         return 0;
     }
 
-    private UserStatusUpdate userStatus;
+    private UserStatusUpdates userStatus;
 
-    public UserStatusUpdate getUserStatus() {
+    public UserStatusUpdates getUserStatus() {
         return userStatus;
     }
 
     @Exclude
-    public void setUserStatus(UserStatusUpdate userStatus) {
+    public void setUserStatus(UserStatusUpdates userStatus) {
         this.userStatus = userStatus;
     }
 

@@ -52,6 +52,9 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
     RelativeLayout rl_btn_if_report_background;
     CheckBox cb_if_report_background;
 
+    RelativeLayout rl_btn_keep_screen_on;
+    CheckBox cb_keep_screen_on;
+
     TextView tv_frequency_title;
 
     public SettingsFragment() {
@@ -84,6 +87,7 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
         InitButtonSelectFrequency();
         InitIfSaveHistory();
         InitIfReportFromBackground();
+        InitKeepScreenOn();
     }
 
     @Override
@@ -120,6 +124,9 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
                 break;
             case R.id.rl_btn_settings_loc_reports_background:
                 SwitchIfReportFromBackground();
+                break;
+            case R.id.rl_btn_settings_keep_screen_on:
+                SwitchKeepScreenOn();
                 break;
         }
     }
@@ -281,8 +288,27 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
 
     //endregion
 
-    public interface ISettingsFragmentInteraction extends ICommonFragmentInteraction {
+    //region keep screen on
 
+    private void InitKeepScreenOn(){
+        rl_btn_keep_screen_on = (RelativeLayout)getView().findViewById(R.id.rl_btn_settings_keep_screen_on);
+        rl_btn_keep_screen_on.setOnClickListener(this);
+        cb_keep_screen_on = (CheckBox)getView().findViewById(R.id.cb_settings_keep_screen_on);
+        cb_keep_screen_on.setClickable(false);
+        cb_keep_screen_on.setChecked(SharedPreferencesUtil.GetKeepScreenOn(getContext()));
+    }
+
+    private void SwitchKeepScreenOn(){
+        boolean currentValue = SharedPreferencesUtil.GetKeepScreenOn(getContext());
+        SharedPreferencesUtil.SetKeepScreenOn(getContext(), !currentValue);
+        cb_keep_screen_on.setChecked(!currentValue);
+        mListener.SettingIfKeepScreenOn(!currentValue);
+    }
+
+    //endregion
+
+    public interface ISettingsFragmentInteraction extends ICommonFragmentInteraction {
+        void SettingIfKeepScreenOn(boolean flag);
     }
 
 }

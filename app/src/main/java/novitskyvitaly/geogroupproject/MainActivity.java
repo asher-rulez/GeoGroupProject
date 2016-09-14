@@ -1,5 +1,6 @@
 package novitskyvitaly.geogroupproject;
 
+import android.app.Activity;
 import android.app.NotificationManager;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -32,8 +33,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
@@ -58,7 +61,7 @@ import java.util.Map;
 import DataModel.Group;
 import DataModel.GroupCommonEvent;
 import DataModel.User;
-import DataModel.UserStatusUpdate;
+import DataModel.UserStatusUpdates;
 import DataModel.UserToGroupAssignment;
 import Fragments.CreateJoinGroupFragment;
 import Fragments.LoadingFragment;
@@ -125,7 +128,7 @@ public class MainActivity extends AppCompatActivity
     public static final int ACTION_CODE_START_SCREEN_ON_STARTUP = 14;
     public static final int ACTION_CODE_START_LOCATION_REPORT_SERVICE = 15;
 
-    int currentFragmentID;
+    int currentFragmentID = -1;
     private final int FRAGMENT_ID_MAP = 1;
     private final int FRAGMENT_ID_LOGIN = 2;
     private final int FRAGMENT_ID_JOINCREATE = 3;
@@ -189,6 +192,8 @@ public class MainActivity extends AppCompatActivity
             SharedPreferencesUtil.ClearSavedMapState(this);
             SwitchToLoadingFragment();
         }
+
+        CheckIsKeepScreenOnSetting();
     }
 
     private void CheckTokenAndAuth() {
@@ -266,27 +271,27 @@ public class MainActivity extends AppCompatActivity
 
         super.onStart();
 
-        if (scheduledFragmentID != -1) {
-            switch (scheduledFragmentID) {
-                case FRAGMENT_ID_LOGIN:
-                    if (scheduledActionCodeForFragmentSwitch == -1) {
-                        Log.e(MY_TAG, "unexpected value of scheduledActionCodeForFragmentSwitch (FRAGMENT_ID_LOGIN)");
-                        return;
-                    }
-                    SwitchToLoginFragment(scheduledActionCodeForFragmentSwitch);
-                    break;
-                case FRAGMENT_ID_MAP:
-                    SwitchToMapFragment();
-                    break;
-                case FRAGMENT_ID_JOINCREATE:
-                    if (scheduledActionCodeForFragmentSwitch == -1) {
-                        Log.e(MY_TAG, "unexpected value of scheduledActionCodeForFragmentSwitch (FRAGMENT_JOINCREATE)");
-                        return;
-                    }
-                    SwitchToCreateJoinFragment(scheduledActionCodeForFragmentSwitch);
-                    break;
-            }
-        }
+//        if (scheduledFragmentID != -1) {
+//            switch (scheduledFragmentID) {
+//                case FRAGMENT_ID_LOGIN:
+//                    if (scheduledActionCodeForFragmentSwitch == -1) {
+//                        Log.e(MY_TAG, "unexpected value of scheduledActionCodeForFragmentSwitch (FRAGMENT_ID_LOGIN)");
+//                        return;
+//                    }
+//                    SwitchToLoginFragment(scheduledActionCodeForFragmentSwitch);
+//                    break;
+//                case FRAGMENT_ID_MAP:
+//                    SwitchToMapFragment();
+//                    break;
+//                case FRAGMENT_ID_JOINCREATE:
+//                    if (scheduledActionCodeForFragmentSwitch == -1) {
+//                        Log.e(MY_TAG, "unexpected value of scheduledActionCodeForFragmentSwitch (FRAGMENT_JOINCREATE)");
+//                        return;
+//                    }
+//                    SwitchToCreateJoinFragment(scheduledActionCodeForFragmentSwitch);
+//                    break;
+//            }
+//        }
     }
 
     @Override
@@ -332,7 +337,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onDestroy() {
         try {
-            if (broadcastReceiver == null) {
+            if (broadcastReceiver != null) {
                 unregisterReceiver(broadcastReceiver);
                 broadcastReceiver = null;
             }
@@ -601,16 +606,21 @@ public class MainActivity extends AppCompatActivity
 
     private void SwitchToMapFragment() {
         if (CommonUtil.GetIsApplicationRunningInForeground(this)) {
-            if (mapFragment == null)
+            currentFragmentID = FRAGMENT_ID_MAP;
+            if (mapFragment == null){
                 mapFragment = new MapFragment();
+            }
+            else {
+                boolean fragmentPopped
+                    = getSupportFragmentManager().popBackStackImmediate(mapFragment.getClass().getName(), 0);
+                if(fragmentPopped) return;
+            }
             FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
             transaction.replace(R.id.fl_fragments_container, mapFragment, FRAGMENT_TAG_MAP);
             for (int i = 0; i < getSupportFragmentManager().getBackStackEntryCount(); i++) {
                 getSupportFragmentManager().popBackStackImmediate();
             }
             transaction.commit();
-            //tv_toolbar_title.setText(getString(R.string.toolbar_title_fragment_map));
-            currentFragmentID = FRAGMENT_ID_MAP;
         } else ScheduleSwitchToFragment(FRAGMENT_ID_MAP, null);
     }
 
@@ -701,7 +711,9 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void showFabsForMap() {
+        HideSoftKeyboard();
         SetFabsVisible(true);
+        currentFragmentID = FRAGMENT_ID_MAP;
     }
 
     @Override
@@ -755,28 +767,35 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onCheckAuthorizationCompleted(int actionCode, boolean isAuthorized, String nickName) {
-        switch (actionCode) {
-            case ACTION_CODE_START_SCREEN_ON_STARTUP:
-                if (isAuthorized) {
-                    Log.i(MY_TAG, "authorized, continue to map");
-                    SwitchToMapFragment();
-                    new AsyncTask<Void, Void, Void>() {
-                        @Override
-                        protected Void doInBackground(Void... voids) {
-                            StartTrackingFirebaseDatabase();
-                            return null;
-                        }
-                    }.execute();
-                } else {
-                    Log.i(MY_TAG, "not authorized, continue to login");
-                    SwitchToLoginFragment(actionCode);
-                }
+        switch (currentFragmentID){
+            case FRAGMENT_ID_SETTINGS:
+                SwitchToSettingsFragment();
                 break;
-            case ACTION_CODE_FOR_CREATE_GROUP:
-            case ACTION_CODE_FOR_JOIN_GROUP:
-                if (isAuthorized)
-                    JoinCreateGroupByActionCodeAndAuthType(actionCode);
-                else SwitchToLoginFragmentForActionCode(actionCode);
+            default:
+                switch (actionCode) {
+                    case ACTION_CODE_START_SCREEN_ON_STARTUP:
+                        if (isAuthorized) {
+                            Log.i(MY_TAG, "authorized, continue to map");
+                            SwitchToMapFragment();
+                            new AsyncTask<Void, Void, Void>() {
+                                @Override
+                                protected Void doInBackground(Void... voids) {
+                                    StartTrackingFirebaseDatabase();
+                                    return null;
+                                }
+                            }.execute();
+                        } else {
+                            Log.i(MY_TAG, "not authorized, continue to login");
+                            SwitchToLoginFragment(actionCode);
+                        }
+                        break;
+                    case ACTION_CODE_FOR_CREATE_GROUP:
+                    case ACTION_CODE_FOR_JOIN_GROUP:
+                        if (isAuthorized)
+                            JoinCreateGroupByActionCodeAndAuthType(actionCode);
+                        else SwitchToLoginFragmentForActionCode(actionCode);
+                        break;
+                }
                 break;
         }
     }
@@ -1434,6 +1453,26 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
+    @Override
+    public void SettingIfKeepScreenOn(boolean flag) {
+        if(flag){
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            Log.i(MY_TAG, "set to screen on");
+        }
+        else{
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            Log.i(MY_TAG, "set to screen off");
+        }
+    }
+
+    private void CheckIsKeepScreenOnSetting(){
+        SettingIfKeepScreenOn(SharedPreferencesUtil.GetKeepScreenOn(this));
+    }
+
+    public void HideSoftKeyboard() {
+        InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(Activity.INPUT_METHOD_SERVICE);
+        inputMethodManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
+    }
 
     //endregion
 

@@ -176,6 +176,7 @@
 
         </RelativeLayout>
 
+<!--
         <RelativeLayout
             android:id="@+id/rl_btn_settings_loc_reports_notification"
             style="@style/Widget.AppCompat.Button.Borderless"
@@ -216,6 +217,7 @@
             </LinearLayout>
 
         </RelativeLayout>
+-->
 
         <RelativeLayout
             android:id="@+id/rl_btn_settings_keep_screen_on"
@@ -258,6 +260,7 @@
 
         </RelativeLayout>
 
+<!--
         <RelativeLayout
             android:id="@+id/fl_btn_settings_notifications"
             style="@style/Widget.AppCompat.Button.Borderless"
@@ -293,6 +296,7 @@
                 android:text="@string/settings_item_user_accont" />
 
         </RelativeLayout>
+-->
 
     </LinearLayout>
 

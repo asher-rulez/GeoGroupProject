@@ -2,6 +2,7 @@ package Fragments;
 
 import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.net.Uri;
 import android.opengl.ETC1;
 import android.os.Bundle;
@@ -39,6 +40,7 @@ import java.util.Stack;
 
 import DataModel.Group;
 import DataModel.IFirebaseSavable;
+import DataModel.UserStatusUpdates;
 import DataModel.UserToGroupAssignment;
 import Utils.CommonUtil;
 import Utils.FirebaseUtil;
@@ -265,10 +267,31 @@ public class CreateJoinGroupFragment extends Fragment implements View.OnClickLis
                                             utga.setLastReportedLatitude(latLng.latitude);
                                             utga.setLastReportedLongitude(latLng.longitude);
                                         }
-                                        utgaRef.push().setValue(utga);
-                                        ClearFields();
-                                        if(mListener != null)
-                                            mListener.onSuccessCreateJoinGroup(null, null, false);
+
+                                        UserStatusUpdates usu = new UserStatusUpdates();
+                                        usu.setMessage(getContext().getString(R.string.status_update_joined_group));
+                                        usu.setUserProfileID(SharedPreferencesUtil.GetMyProfileID(getContext()));
+                                        usu.setGroupID(groupName);
+                                        usu.setStatusUpdateTypeID(UserStatusUpdates.USER_STATUS_UPDATE_TYPE_JOINED_GROUP);
+                                        usu.setCreateUnixTime(new Date().getTime());
+
+                                        ArrayList<IFirebaseSavable> savables = new ArrayList<IFirebaseSavable>();
+                                        savables.add(utga);
+                                        savables.add(usu);
+                                        FirebaseUtil.SaveDataArrayToFirebase(getContext(), savables, new Stack<DatabaseReference>(), new FirebaseUtil.IFirebaseSaveArrayOfObjectsCallback() {
+                                            @Override
+                                            public void OnSavingFinishedSuccessfully(Stack<DatabaseReference> savedObjectsReferences) {
+                                                ClearFields();
+                                                if(mListener != null)
+                                                    mListener.onSuccessCreateJoinGroup(null, null, false);
+                                            }
+
+                                            @Override
+                                            public void OnSavingError(DatabaseError databaseError) {
+                                                if(databaseError != null)
+                                                    databaseError.toException().printStackTrace();
+                                            }
+                                        });
                                     }
                                     @Override
                                     public void onCancelled(DatabaseError databaseError) { }
@@ -323,9 +346,17 @@ public class CreateJoinGroupFragment extends Fragment implements View.OnClickLis
             utga.setLastReportedLongitude(latLng.longitude);
         }
 
+        UserStatusUpdates usu = new UserStatusUpdates();
+        usu.setGroupID(generatedGroupID);
+        usu.setUserProfileID(SharedPreferencesUtil.GetMyProfileID(getContext()));
+        usu.setCreateUnixTime(new Date().getTime());
+        usu.setStatusUpdateTypeID(UserStatusUpdates.USER_STATUS_UPDATE_TYPE_CREATED_GROUP);
+        usu.setMessage(getContext().getString(R.string.status_update_created_group));
+
         ArrayList<IFirebaseSavable> savables = new ArrayList<>();
         savables.add(group);
         savables.add(utga);
+        savables.add(usu);
 
         FirebaseUtil.SaveDataArrayToFirebase(getContext(), savables, new Stack<DatabaseReference>(), new FirebaseUtil.IFirebaseSaveArrayOfObjectsCallback() {
             @Override
@@ -354,6 +385,7 @@ public class CreateJoinGroupFragment extends Fragment implements View.OnClickLis
             public void onClick(View view) {
                 if(mListener != null)
                     mListener.onSuccessCreateJoinGroup(group.getGeneratedID(), group.getPassword(), true);
+                groupResultDialog.setOnDismissListener(null);
                 groupResultDialog.dismiss();
             }
         });
@@ -364,7 +396,16 @@ public class CreateJoinGroupFragment extends Fragment implements View.OnClickLis
             public void onClick(View view) {
                 if(mListener != null)
                     mListener.onSuccessCreateJoinGroup(null, null, false);
+                groupResultDialog.setOnDismissListener(null);
                 groupResultDialog.dismiss();
+            }
+        });
+
+        groupResultDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
+            @Override
+            public void onDismiss(DialogInterface dialogInterface) {
+                if(mListener != null)
+                    mListener.onSuccessCreateJoinGroup(null, null, false);
             }
         });
 

@@ -30,6 +30,10 @@ import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -81,7 +85,9 @@ public class MapFragment extends SupportMapFragment
         GoogleMap.OnMarkerClickListener,
         GoogleMap.OnInfoWindowClickListener,
         View.OnClickListener,
-        FirebaseUtil.IFirebaseCheckAuthCallback {
+        FirebaseUtil.IFirebaseCheckAuthCallback,
+        GoogleApiClient.ConnectionCallbacks,
+        GoogleApiClient.OnConnectionFailedListener, com.google.android.gms.location.LocationListener {
 
     private static final String MY_TAG = "geog_mapFragment";
 
@@ -91,11 +97,15 @@ public class MapFragment extends SupportMapFragment
     MapView mapView;
     GoogleMap googleMap;
     LatLng lastLocation;
+    Location locationFromService;
 
     Map<String, Marker> myMarkers;
 
     private Context appContext;
     private OnMapFragmentInteractionListener mListener;
+
+    private GoogleApiClient mGoogleApiClient;
+    private LocationRequest mLocationRequest;
 
     private static final int REQUEST_CODE_ASK_LOCATION_PERMISSION = 10;
 
@@ -155,6 +165,8 @@ public class MapFragment extends SupportMapFragment
         super.onDestroy();
         mapView.onDestroy();
         SharedPreferencesUtil.ClearSavedMapState(getContext());
+        if (mGoogleApiClient != null && mGoogleApiClient.isConnected())
+            mGoogleApiClient.disconnect();
     }
 
     @Override
@@ -198,8 +210,8 @@ public class MapFragment extends SupportMapFragment
             CommonUtil.RequestLocationPermissions(getActivity(), REQUEST_CODE_ASK_LOCATION_PERMISSION);
         } else SetMapProperties();
 
-        if(getMyMarkers().size() > 0){
-            for(String key : getMyMarkers().keySet()){
+        if (getMyMarkers().size() > 0) {
+            for (String key : getMyMarkers().keySet()) {
                 Marker prevMarker = getMyMarkers().get(key);
                 prevMarker.remove();
                 getMyMarkers().remove(key);
@@ -212,7 +224,7 @@ public class MapFragment extends SupportMapFragment
         icon = BitmapDescriptorFactory.fromBitmap(markerIcon);
 
         ArrayList<UserToGroupAssignment> utgas = mListener.getUTGAsForShowing();
-        for (UserToGroupAssignment utga : utgas){
+        for (UserToGroupAssignment utga : utgas) {
             getMyMarkers().put(utga.getGroupID() + ":" + utga.getUserProfileID(),
                     AddMarker(utga.getLastReportedLatitude(), utga.getLastReportedLongitude(),
                             utga.getGroup().getName() + ":" + utga.getUser().getUsername(), icon));
@@ -236,92 +248,60 @@ public class MapFragment extends SupportMapFragment
             googleMap.setOnInfoWindowClickListener(this);
             googleMap.getUiSettings().setMyLocationButtonEnabled(false);
             CameraPosition cameraPosition = SharedPreferencesUtil.GetMapStateFromPrefsAsCameraPosition(getContext());
-            if(cameraPosition != null)
+            if (cameraPosition != null)
                 googleMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
             else
-                TryGetLocationAndCenterMap();
+                initLocationRequest();
         }
     }
 
-    private void TryGetLocationAndCenterMap() {
-        new AsyncTask<Void, Void, Void>() {
-            @Override
-            protected Void doInBackground(Void... voids) {
-                final LocationManager locationManager = (LocationManager) getContext().getSystemService(Context.LOCATION_SERVICE);
-                final Location location = null;
-                if (locationManager == null) {
-                    Log.e(MY_TAG, "cant get location manager!");
-                    return null;
-                }
-                if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                        && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    return null;
-                }
-                locationManager.requestSingleUpdate(LocationManager.NETWORK_PROVIDER, new LocationListener() {
-                    @Override
-                    public void onLocationChanged(Location location) {
-                        if (location != null)
-                            SetLastLocation(location, true);
-                    }
+    synchronized void buildGoogleApiClient() {
+        mGoogleApiClient = new GoogleApiClient.Builder(getContext())
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(LocationServices.API)
+                .build();
+    }
 
-                    @Override
-                    public void onProviderDisabled(String s) {
-                        if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                                && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                            return;
-                        }
-                        locationManager.requestSingleUpdate(LocationManager.GPS_PROVIDER, new LocationListener() {
-                            @Override
-                            public void onLocationChanged(Location location) {
-                                SetLastLocation(location, true);
-                            }
+    private void initLocationRequest() {
+        buildGoogleApiClient();
+        mGoogleApiClient.connect();
+    }
 
-                            @Override
-                            public void onStatusChanged(String s, int i, Bundle bundle) {
-                            }
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+        mLocationRequest = LocationRequest.create();
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        mLocationRequest.setInterval(100000);
 
-                            @Override
-                            public void onProviderEnabled(String s) {
-                            }
+        if(getContext() == null)
+            return;
+        if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
 
-                            @Override
-                            public void onProviderDisabled(String s) {
-                                if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                                        && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                                    return;
-                                }
-                                Location loc = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                                if (loc != null) {
-                                    SetLastLocation(loc, true);
-                                    return;
-                                }
-                                loc = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-                                if (loc != null) {
-                                    SetLastLocation(loc, true);
-                                    return;
-                                }
-                                CheckIfLocationSavedInSPAndCenterOnIt();
-                            }
-                        }, Looper.getMainLooper());
-                    }
+        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
+        locationFromService = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+    }
 
-                    @Override
-                    public void onStatusChanged(String s, int i, Bundle bundle) {
-                    }
+    @Override
+    public void onConnectionSuspended(int i) {}
 
-                    @Override
-                    public void onProviderEnabled(String s) {
-                    }
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {}
 
-                }, Looper.getMainLooper());
-                return null;
-            }
-        }.execute();
+    @Override
+    public void onLocationChanged(Location location) {
+        Log.i(MY_TAG, "got current location");
+        SetLastLocation(location == null ? locationFromService : location, true);
+        LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
+        mGoogleApiClient.disconnect();
     }
 
     private void SetLastLocation(LatLng latLng) {
-//        if (latLng != null)
-//            SharedPreferencesUtil.SaveLocationInSharedPreferences(getContext(), latLng.latitude, latLng.longitude, new Date());
+        if (latLng != null)
+            SharedPreferencesUtil.SaveLocationInSharedPreferences(getContext(), latLng.latitude, latLng.longitude, new Date());
         lastLocation = latLng;
     }
 
@@ -443,20 +423,6 @@ public class MapFragment extends SupportMapFragment
     //endregion
 
     //region Join/create group
-
-    //endregion
-
-    //region Firebase
-
-//    private boolean CheckIfAuthorizedToFirebase(){
-//        FirebaseAuth firebaseAuthorization = FirebaseAuth.getInstance();
-//        firebaseAuthorization.addAuthStateListener(new FirebaseAuth.AuthStateListener() {
-//            @Override
-//            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
-//                FirebaseUser user = firebaseAuth.getCurrentUser()
-//            }
-//        });
-//    }
 
     //endregion
 

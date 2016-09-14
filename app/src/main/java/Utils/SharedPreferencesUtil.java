@@ -2,6 +2,7 @@ package Utils;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.Log;
 
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
@@ -89,8 +90,29 @@ public class SharedPreferencesUtil {
         return result;
     }
 
+    public static void SetKeepScreenOn(Context ctx, boolean keepScreenOn){
+        SharedPreferences sp = ctx.getSharedPreferences(ctx.getString(R.string.app_settings_token), Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sp.edit();
+        editor.putBoolean(ctx.getString(R.string.sp_key_keep_screen_on), keepScreenOn);
+        editor.commit();
+    }
+
+    public static boolean GetKeepScreenOn(Context ctx){
+        SharedPreferences sp = ctx.getSharedPreferences(ctx.getString(R.string.app_settings_token), Context.MODE_PRIVATE);
+        boolean result = sp.getBoolean(ctx.getString(R.string.sp_key_keep_screen_on), false);
+        if (result) {
+            SharedPreferences.Editor editor = sp.edit();
+            editor.putBoolean(ctx.getString(R.string.sp_key_keep_screen_on), false);
+            editor.commit();
+        }
+        return result;
+    }
+
     public static void SaveLocationInSharedPreferences(Context ctx, double latitude, double longitude, Date date) {
-        SharedPreferences sp = ctx.getSharedPreferences(ctx.getString(R.string.last_location_token), Context.MODE_PRIVATE);
+        Log.d(MY_TAG, "ctx is " + ctx == null ? "null" : "not null");
+        int str = R.string.last_location_token;
+        String token = ctx.getString(str);
+        SharedPreferences sp = ctx.getSharedPreferences(token, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sp.edit();
         editor.putFloat(ctx.getString(R.string.last_location_latitude), (float) latitude);
         editor.putFloat(ctx.getString(R.string.last_location_longitude), (float) longitude);

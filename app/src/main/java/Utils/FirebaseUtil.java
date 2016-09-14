@@ -20,6 +20,8 @@ import java.util.Stack;
 import DataModel.Group;
 import DataModel.IFirebaseSavable;
 import DataModel.User;
+import DataModel.UserStatusUpdates;
+import DataModel.UserStatusUpdates;
 import DataModel.UserToGroupAssignment;
 import novitskyvitaly.geogroupproject.R;
 
@@ -41,7 +43,7 @@ public class FirebaseUtil {
         final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user == null) {
             final String profileId = SharedPreferencesUtil.GetMyProfileID(ctx);
-            if(!profileId.equals("")){
+            if (!profileId.equals("")) {
                 Query currentUserQuery
                         = FirebaseDatabase.getInstance().getReference().child(ctx.getString(R.string.firebase_child_users))
                         .orderByChild(User.USER_KEY_PROFILEID).equalTo(profileId);
@@ -69,8 +71,7 @@ public class FirebaseUtil {
                         databaseError.toException().printStackTrace();
                     }
                 });
-            }
-            else {
+            } else {
                 checkAuthByAndroidID(ctx, actionCode, callbackListener);
             }
         } else {
@@ -143,6 +144,19 @@ public class FirebaseUtil {
             case FIREBASE_SAVABLE_TYPE_USER_LOCATION_REPORT:
                 break;
             case FIREBASE_SAVABLE_TYPE_USER_STATUS_UPDATE:
+                UserStatusUpdates usu = (UserStatusUpdates) savable;
+                fdRef.child(ctx.getString(R.string.firebase_user_status_update)).push().setValue(usu, new DatabaseReference.CompletionListener() {
+                    @Override
+                    public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
+                        if (databaseError != null)
+                            RevertStackAndReturnErrorToCallback(savedObjectsReferences, databaseError, callbackListener);
+                        else {
+                            dataArray.remove(savable);
+                            savedObjectsReferences.push(databaseReference);
+                            SaveDataArrayToFirebase(ctx, dataArray, savedObjectsReferences, callbackListener);
+                        }
+                    }
+                });
                 break;
             case FIREBASE_SAVABLE_TYPE_USER_TO_GROUP_ASSIGNMENT:
                 UserToGroupAssignment utga = (UserToGroupAssignment) savable;
@@ -163,6 +177,9 @@ public class FirebaseUtil {
     }
 
     public static void RevertStackAndReturnErrorToCallback(Stack<DatabaseReference> changesStack, DatabaseError error, IFirebaseSaveArrayOfObjectsCallback callbackListener) {
+        while (!changesStack.isEmpty()){
+            changesStack.pop().setValue(null);
+        }
         //todo: revert stack
         callbackListener.OnSavingError(error);
     }

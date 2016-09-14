@@ -216,7 +216,7 @@ public class LoginFragment extends Fragment implements View.OnClickListener, Goo
 
     private void firebaseAuthWithGoogle(final GoogleSignInAccount account){
         if(account != null)
-            SaveUserInFirebase(account.getDisplayName(), account.getId(), ACCOUNT_TYPE_GOOGLE);
+            CheckUserInFirebaseBySocialProfileID(account.getDisplayName(), account.getId(), ACCOUNT_TYPE_GOOGLE);
 //        AuthCredential credential = GoogleAuthProvider.getCredential(account.getIdToken(), null);
 //        firebaseAuth.signInWithCredential(credential)
 //                .addOnCompleteListener(getActivity(), new OnCompleteListener<AuthResult>() {
@@ -282,7 +282,7 @@ public class LoginFragment extends Fragment implements View.OnClickListener, Goo
                         @Override
                         public void onCompleted(JSONObject object, GraphResponse response) {
                                 Profile profile = Profile.getCurrentProfile();
-                                SaveUserInFirebase(profile.getFirstName() + " " + profile.getLastName(), profile.getId(), ACCOUNT_TYPE_FACEBOOK);
+                            CheckUserInFirebaseBySocialProfileID(profile.getFirstName() + " " + profile.getLastName(), profile.getId(), ACCOUNT_TYPE_FACEBOOK);
                         }
                     });
                     Bundle parameters = new Bundle();
@@ -342,7 +342,7 @@ public class LoginFragment extends Fragment implements View.OnClickListener, Goo
                     return;
                 }
                 UIUtil.SetEditTextIsValid(ctx, et_nickname, true);
-                SaveUserInFirebase(et_nickname.getText().toString(), CommonUtil.GetAndroidID(getContext()), ACCOUNT_TYPE_NICKNAME);
+                CheckUserInFirebaseBySocialProfileID(et_nickname.getText().toString(), CommonUtil.GetAndroidID(getContext()), ACCOUNT_TYPE_NICKNAME);
                 nicknameDialog.dismiss();
             }
         });
@@ -390,7 +390,7 @@ public class LoginFragment extends Fragment implements View.OnClickListener, Goo
         });
     }
 
-    private void SaveUserInFirebase(final String nickname, final String profileID, final int accountTypeID){
+    private void SaveUserInFirebase(final String profileID, final String nickname, final int accountTypeID){
         final DatabaseReference fdRef = FirebaseDatabase.getInstance().getReference().child(getString(R.string.firebase_child_users));
         Query currentUserQuery = fdRef.orderByChild(User.USER_KEY_PROFILEID).equalTo(CommonUtil.GetAndroidID(getContext()));
         currentUserQuery.addListenerForSingleValueEvent(new ValueEventListener() {

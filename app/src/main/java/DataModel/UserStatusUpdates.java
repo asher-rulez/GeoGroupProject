@@ -7,10 +7,10 @@ import Utils.FirebaseUtil;
 /**
  * Created by Asher on 19.08.2016.
  */
-public class UserStatusUpdate implements IFirebaseSavable {
+public class UserStatusUpdates implements IFirebaseSavable {
     private final String MY_TAG = "geog_status_update";
 
-    public UserStatusUpdate() { }
+    public UserStatusUpdates() { }
 
     private String key;
     private long createUnixTime;
@@ -18,6 +18,13 @@ public class UserStatusUpdate implements IFirebaseSavable {
     private String message;
     private String groupID;
     private String userProfileID;
+
+    public static final int USER_STATUS_UPDATE_TYPE_CREATED_GROUP = 1;
+    public static final int USER_STATUS_UPDATE_TYPE_JOINED_GROUP = 2;
+    public static final int USER_STATUS_UPDATE_TYPE_LEFT_GROUP = 3;
+    public static final int USER_STATUS_UPDATE_TYPE_SLEEP_MODE_ON = 4;
+    public static final int USER_STATUS_UPDATE_TYPE_SLEEP_MODE_OFF = 5;
+    public static final int USER_STATUS_UPDATE_TYPE_BATTERY_LOW = 6;
 
     public long getCreateUnixTime() {
         return createUnixTime;

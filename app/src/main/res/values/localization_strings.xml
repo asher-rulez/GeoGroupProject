@@ -75,4 +75,10 @@
     <string name="location_service_notification_ticker">GeoGroup location service running</string>
     <string name="location_service_notification_content">Click to open</string>
 
+    <!-- user status updates -->
+
+    <string name="status_update_created_group">I created group!</string>
+    <string name="status_update_joined_group">I joined group</string>
+    <string name="status_update_battery_low">My battery is low</string>
+
 </resources>
