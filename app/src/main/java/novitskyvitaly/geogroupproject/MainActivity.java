@@ -194,6 +194,10 @@ public class MainActivity extends AppCompatActivity
         }
 
         CheckIsKeepScreenOnSetting();
+
+        IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_LOW);
+        filter.addAction(Intent.ACTION_POWER_CONNECTED);
+        registerReceiver(new BatteryStateChangesReceiver(), filter);
     }
 
     private void CheckTokenAndAuth() {
@@ -1084,7 +1088,7 @@ public class MainActivity extends AppCompatActivity
         Snackbar.make(toolbar,
                 getString(R.string.snackbar_user_joined_group).replace("{0}", user.getUsername()).replace("{1}", group.getName()),
                 Snackbar.LENGTH_SHORT).show();
-        if (mapFragment != null)//todo: add check if I'm tracking this group
+        if (mapFragment != null && utga.getLastReportedLatitude() != null && utga.getLastReportedLongitude() != null)//todo: add check if I'm tracking this group
             mapFragment.AddMarkerForNewUser(user, group, utga.getLastReportedLatitude(), utga.getLastReportedLongitude());
     }
 
