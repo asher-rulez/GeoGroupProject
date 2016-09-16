@@ -59,6 +59,7 @@
     <string name="toolbar_title_fragment_login">Login</string>
     <string name="toolbar_title_fragment_settings">Settings</string>
     <string name="toolbar_title_fragment_groups_list">Groups list</string>
+    <string name="toolbar_title_fragment_group">Group {0}</string>
     <string name="menu_title_back_to_map">Back to map</string>
     <string name="progress_loading">Loading</string>
 
@@ -81,5 +82,17 @@
     <string name="status_update_created_group">I created group!</string>
     <string name="status_update_joined_group">I joined group</string>
     <string name="status_update_battery_low">My battery is low</string>
+
+    <!-- group fragment -->
+
+    <string name="group_fragment_property_group_id">Group key:</string>
+    <string name="group_fragment_property_group_password">Group password:</string>
+    <string name="group_fragment_share">Share</string>
+    <string name="group_fragment_setting_track">Track this group</string>
+    <string name="group_fragment_members">Members</string>
+    <string name="group_fragment_messages">Messages</string>
+    <string name="group_fragment_events">Events</string>
+    <string name="group_fragment_leave">Leave group</string>
+    <string name="group_fragment_delete">Delete group</string>
 
 </resources>

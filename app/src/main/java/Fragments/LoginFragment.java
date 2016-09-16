@@ -282,7 +282,7 @@ public class LoginFragment extends Fragment implements View.OnClickListener, Goo
                         @Override
                         public void onCompleted(JSONObject object, GraphResponse response) {
                                 Profile profile = Profile.getCurrentProfile();
-                            CheckUserInFirebaseBySocialProfileID(profile.getFirstName() + " " + profile.getLastName(), profile.getId(), ACCOUNT_TYPE_FACEBOOK);
+                            CheckUserInFirebaseBySocialProfileID(profile.getId(), profile.getFirstName() + " " + profile.getLastName(), ACCOUNT_TYPE_FACEBOOK);
                         }
                     });
                     Bundle parameters = new Bundle();

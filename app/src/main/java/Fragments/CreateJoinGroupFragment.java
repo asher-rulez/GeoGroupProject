@@ -116,6 +116,7 @@ public class CreateJoinGroupFragment extends Fragment implements View.OnClickLis
     @Override
     public void onResume() {
         super.onResume();
+        mListener.makeFabsInvisible();
         switch (ActionCode){
             case MainActivity.ACTION_CODE_FOR_CREATE_GROUP:
                 mListener.SetupMainToolbarTitle(getString(R.string.toolbar_title_fragment_create_group));
@@ -463,8 +464,8 @@ public class CreateJoinGroupFragment extends Fragment implements View.OnClickLis
     //region activity interaction
 
     public interface OnCreateJoinGroupInteractionListener extends ICommonFragmentInteraction {
-        public void onCancelCreateJoinGroup();
-        public void onSuccessCreateJoinGroup(String groupID, String groupPassword, boolean ifSendData);
+        void onCancelCreateJoinGroup();
+        void onSuccessCreateJoinGroup(String groupID, String groupPassword, boolean ifSendData);
     }
 
     //endregion

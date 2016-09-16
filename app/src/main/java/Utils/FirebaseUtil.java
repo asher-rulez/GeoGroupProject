@@ -40,8 +40,6 @@ public class FirebaseUtil {
 
     public static void
     CheckAuthForActionCode(final Context ctx, final int actionCode, final IFirebaseCheckAuthCallback callbackListener) {
-        final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) {
             final String profileId = SharedPreferencesUtil.GetMyProfileID(ctx);
             if (!profileId.equals("")) {
                 Query currentUserQuery
@@ -58,6 +56,7 @@ public class FirebaseUtil {
                                     SharedPreferencesUtil.SaveNicknameInSharedPreferences(ctx, nickname);
                                     SharedPreferencesUtil.SaveProfileIDInSharedPreferences(ctx, user1.getProfileID());
                                     callbackListener.onCheckAuthorizationCompleted(actionCode, true, nickname);
+                                    break;
                                 }
                             }
                         } else {
@@ -74,9 +73,6 @@ public class FirebaseUtil {
             } else {
                 checkAuthByAndroidID(ctx, actionCode, callbackListener);
             }
-        } else {
-            callbackListener.onCheckAuthorizationCompleted(actionCode, true, user.getDisplayName());
-        }
     }
 
     private static void checkAuthByAndroidID(final Context ctx, final int actionCode, final IFirebaseCheckAuthCallback callbackListener) {

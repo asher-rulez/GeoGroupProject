@@ -9,22 +9,23 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
 
 import Adapters.GroupsListRecyclerViewAdapter;
 import novitskyvitaly.geogroupproject.R;
 
-public class GroupsListFragment extends Fragment {
+public class GroupsListFragment extends Fragment implements GroupsListRecyclerViewAdapter.IGroupsListRecyclerViewInteraction {
 
     IGroupsListFragmentInteraction mListener;
 
     private static View view;
     private RecyclerView rv_groups_list;
     GroupsListRecyclerViewAdapter adapter;
+    ProgressBar pb_loading_groups;
 
     public GroupsListFragment() {
         // Required empty public constructor
     }
-
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -32,6 +33,7 @@ public class GroupsListFragment extends Fragment {
         view = inflater.inflate(R.layout.fragment_groups_list, container, false);
         rv_groups_list = (RecyclerView)view.findViewById(R.id.rv_groups_list);
         initRecyclerView();
+        pb_loading_groups = (ProgressBar)view.findViewById(R.id.pb_loading_groups);
 
         return view;
     }
@@ -56,16 +58,27 @@ public class GroupsListFragment extends Fragment {
     }
 
     private void initRecyclerView() {
-        //rv_groups_list.setHasFixedSize(true);
+        rv_groups_list.setHasFixedSize(true);
         LinearLayoutManager llm = new LinearLayoutManager(rv_groups_list.getContext());
         llm.setOrientation(LinearLayoutManager.VERTICAL);
         rv_groups_list.setLayoutManager(llm);
-        adapter = new GroupsListRecyclerViewAdapter(getContext());
+        adapter = new GroupsListRecyclerViewAdapter(getContext(), this);
         rv_groups_list.setAdapter(adapter);
+    }
+
+    @Override
+    public void onGroupSelected(String groupKey) {
+        mListener.OnGroupSelectedFromList(groupKey);
+    }
+
+    @Override
+    public void onFirstGroupLoaded() {
+        pb_loading_groups.setVisibility(ProgressBar.GONE);
     }
 
     public interface IGroupsListFragmentInteraction extends ICommonFragmentInteraction {
         void MakeFabsVisibleForGroupsList();
+        void OnGroupSelectedFromList(String groupKey);
     }
 
 }

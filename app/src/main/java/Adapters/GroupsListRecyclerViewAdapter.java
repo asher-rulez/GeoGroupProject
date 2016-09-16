@@ -31,8 +31,10 @@ public class GroupsListRecyclerViewAdapter extends RecyclerView.Adapter<GroupsLi
     ArrayList<Group> myGroups;
     Query myGroupsQuery;
     ChildEventListener myGroupsQueryListener;
+    private IGroupsListRecyclerViewInteraction callbackListener;
 
-    public GroupsListRecyclerViewAdapter(Context ctx){
+    public GroupsListRecyclerViewAdapter(Context ctx, IGroupsListRecyclerViewInteraction callbackListener){
+        this.callbackListener = callbackListener;
         context = ctx;
         myGroupsQuery = FirebaseUtil.GetMyGroupsQuery(context);
         myGroupsQuery.addChildEventListener(getMyGroupsQueryListener());
@@ -78,6 +80,8 @@ public class GroupsListRecyclerViewAdapter extends RecyclerView.Adapter<GroupsLi
                                                                             notifyDataSetChanged();
                                                                         }
                                                                     }
+                                                                    if(getMyGroups().size() > 0)
+                                                                        callbackListener.onFirstGroupLoaded();
                                                                 }
 
                                                                 @Override
@@ -96,9 +100,13 @@ public class GroupsListRecyclerViewAdapter extends RecyclerView.Adapter<GroupsLi
                                     .addListenerForSingleValueEvent(new ValueEventListener() {
                                         @Override
                                         public void onDataChange(DataSnapshot ds) {
-                                            Group group = ds.getValue(Group.class);
-                                            g.setName(group.getName());
-                                            notifyDataSetChanged();
+                                            if(ds.hasChildren()){
+                                                for(DataSnapshot ds1 : ds.getChildren()){
+                                                    Group group = ds1.getValue(Group.class);
+                                                    g.setName(group.getName());
+                                                    notifyDataSetChanged();
+                                                }
+                                            }
                                         }
 
                                         @Override
@@ -149,8 +157,14 @@ public class GroupsListRecyclerViewAdapter extends RecyclerView.Adapter<GroupsLi
     }
 
     @Override
-    public void onBindViewHolder(GroupViewHolder holder, int position) {
+    public void onBindViewHolder(final GroupViewHolder holder, final int position) {
         holder.SetProperties(getMyGroups().get(position));
+        holder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                callbackListener.onGroupSelected(holder.getGroupGeneratedID());
+            }
+        });
     }
 
     @Override
@@ -172,6 +186,10 @@ public class GroupsListRecyclerViewAdapter extends RecyclerView.Adapter<GroupsLi
             context = ctx;
             tv_title = (TextView)itemView.findViewById(R.id.tv_group_item_title);
             tv_number_of_members = (TextView)itemView.findViewById(R.id.tv_group_item_number_of_members);
+        }
+
+        public String getGroupGeneratedID(){
+            return group.getGeneratedID();
         }
 
         public void SetProperties(Group group){
@@ -201,7 +219,7 @@ public class GroupsListRecyclerViewAdapter extends RecyclerView.Adapter<GroupsLi
                             for(DataSnapshot ds : dataSnapshot.getChildren())
                                 count++;
                             tv_number_of_members.setText(String.valueOf(count));
-                        }
+                        } else
                             tv_number_of_members.setText("");
                     }
 
@@ -213,5 +231,10 @@ public class GroupsListRecyclerViewAdapter extends RecyclerView.Adapter<GroupsLi
             }
             return groupMembersQueryListener;
         }
+    }
+
+    public interface IGroupsListRecyclerViewInteraction{
+        void onGroupSelected(String groupKey);
+        void onFirstGroupLoaded();
     }
 }

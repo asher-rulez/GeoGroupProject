@@ -64,6 +64,7 @@ import DataModel.User;
 import DataModel.UserStatusUpdates;
 import DataModel.UserToGroupAssignment;
 import Fragments.CreateJoinGroupFragment;
+import Fragments.GroupFragment;
 import Fragments.GroupsListFragment;
 import Fragments.LoadingFragment;
 import Fragments.LoginFragment;
@@ -85,7 +86,8 @@ public class MainActivity extends AppCompatActivity
         View.OnClickListener,
         Toolbar.OnMenuItemClickListener,
         SettingsFragment.ISettingsFragmentInteraction,
-        GroupsListFragment.IGroupsListFragmentInteraction {
+        GroupsListFragment.IGroupsListFragmentInteraction,
+        GroupFragment.IGroupFragmentInteraction {
 
     private final String MY_TAG = "geog_main_act";
     private final static int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
@@ -156,6 +158,7 @@ public class MainActivity extends AppCompatActivity
     CreateJoinGroupFragment createJoinFragment;
     LoadingFragment loadingFragment;
     GroupsListFragment groupsListFragment;
+    GroupFragment groupFragment;
 
     private int scheduledFragmentID = -1;
     private int scheduledActionCodeForFragmentSwitch = -1;
@@ -283,30 +286,7 @@ public class MainActivity extends AppCompatActivity
                 e.printStackTrace();
             }
         }
-
         super.onStart();
-
-//        if (scheduledFragmentID != -1) {
-//            switch (scheduledFragmentID) {
-//                case FRAGMENT_ID_LOGIN:
-//                    if (scheduledActionCodeForFragmentSwitch == -1) {
-//                        Log.e(MY_TAG, "unexpected value of scheduledActionCodeForFragmentSwitch (FRAGMENT_ID_LOGIN)");
-//                        return;
-//                    }
-//                    SwitchToLoginFragment(scheduledActionCodeForFragmentSwitch);
-//                    break;
-//                case FRAGMENT_ID_MAP:
-//                    SwitchToMapFragment();
-//                    break;
-//                case FRAGMENT_ID_JOINCREATE:
-//                    if (scheduledActionCodeForFragmentSwitch == -1) {
-//                        Log.e(MY_TAG, "unexpected value of scheduledActionCodeForFragmentSwitch (FRAGMENT_JOINCREATE)");
-//                        return;
-//                    }
-//                    SwitchToCreateJoinFragment(scheduledActionCodeForFragmentSwitch);
-//                    break;
-//            }
-//        }
     }
 
     @Override
@@ -380,9 +360,12 @@ public class MainActivity extends AppCompatActivity
                 intent.addCategory(Intent.CATEGORY_HOME);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(intent);
-            } else {
+            }
+            if(currentFragmentID == FRAGMENT_ID_JOINCREATE){
                 if (currentFragmentID == FRAGMENT_ID_JOINCREATE && createJoinFragment != null)
                     createJoinFragment.ClearFields();
+                getSupportFragmentManager().popBackStackImmediate();
+            } else {
                 super.onBackPressed();
             }
         }
@@ -666,7 +649,7 @@ public class MainActivity extends AppCompatActivity
             FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
             transaction.replace(R.id.fl_fragments_container, createJoinFragment, FRAGMENT_TAG_JOINCREATE);
             transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
-            transaction.addToBackStack("createJoin");
+            transaction.addToBackStack(FRAGMENT_TAG_JOINCREATE);
             transaction.commit();
 //            switch (actionCode){
 //                case ACTION_CODE_FOR_CREATE_GROUP:
@@ -710,6 +693,18 @@ public class MainActivity extends AppCompatActivity
         transaction.addToBackStack(FRAGMENT_TAG_GROUPS_LIST);
         transaction.commit();
         currentFragmentID = FRAGMENT_ID_GROUPS_LIST;
+    }
+
+    private void SwitchToGroupFragment(String groupKey){
+        if(groupFragment == null)
+            groupFragment = new GroupFragment();
+        groupFragment.setGroupKey(groupKey);
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.fl_fragments_container, groupFragment, FRAGMENT_TAG_GROUP);
+        transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+        transaction.addToBackStack(FRAGMENT_TAG_GROUP);
+        transaction.commit();
+        currentFragmentID = FRAGMENT_GROUP;
     }
 
     @Override
@@ -780,7 +775,7 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onSuccessCreateJoinGroup(String groupID, String groupPassword, boolean ifSendData) {
-        SwitchToMapFragment();
+        onBackPressed();
 
         if (ifSendData && !TextUtils.isEmpty(groupID) && !TextUtils.isEmpty(groupPassword)) {
             Intent smsIntent = new Intent(Intent.ACTION_SEND);
@@ -792,6 +787,11 @@ public class MainActivity extends AppCompatActivity
         }
         //todo: start listening to group
         //todo: ifSendData => send group data via sms
+    }
+
+    @Override
+    public void makeFabsInvisible() {
+        SetFabsVisible(false);
     }
 
     @Override
@@ -1515,6 +1515,11 @@ public class MainActivity extends AppCompatActivity
         HideSoftKeyboard();
         SetFabsVisible(true);
         currentFragmentID = FRAGMENT_ID_GROUPS_LIST;
+    }
+
+    @Override
+    public void OnGroupSelectedFromList(String groupKey) {
+        SwitchToGroupFragment(groupKey);
     }
 
     //endregion

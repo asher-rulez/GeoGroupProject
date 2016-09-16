@@ -6,4 +6,5 @@ package Fragments;
 public interface ICommonFragmentInteraction {
     void SetupMainToolbarTitle(String title);
     void SetMainToolbarGoToMapVisible(boolean ifVisible);
+    void makeFabsInvisible();
 }
