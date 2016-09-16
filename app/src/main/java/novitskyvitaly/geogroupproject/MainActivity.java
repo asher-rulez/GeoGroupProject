@@ -64,6 +64,7 @@ import DataModel.User;
 import DataModel.UserStatusUpdates;
 import DataModel.UserToGroupAssignment;
 import Fragments.CreateJoinGroupFragment;
+import Fragments.GroupsListFragment;
 import Fragments.LoadingFragment;
 import Fragments.LoginFragment;
 import Fragments.MapFragment;
@@ -83,13 +84,15 @@ public class MainActivity extends AppCompatActivity
         FirebaseUtil.IFirebaseCheckAuthCallback,
         View.OnClickListener,
         Toolbar.OnMenuItemClickListener,
-        SettingsFragment.ISettingsFragmentInteraction {
+        SettingsFragment.ISettingsFragmentInteraction,
+        GroupsListFragment.IGroupsListFragmentInteraction {
 
     private final String MY_TAG = "geog_main_act";
     private final static int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
     boolean isInternetAvailable = false;
     boolean isGoogleServiceAvailable = false;
     GeoGroupBroadcastReceiver broadcastReceiver;
+    BatteryStateChangesReceiver phoneStateReceiver;
 
     //region UI variables
 
@@ -134,18 +137,25 @@ public class MainActivity extends AppCompatActivity
     private final int FRAGMENT_ID_JOINCREATE = 3;
     private final int FRAGMENT_ID_LOADING = 4;
     private final int FRAGMENT_ID_SETTINGS = 5;
+    private final int FRAGMENT_ID_GROUPS_LIST = 6;
+    private final int FRAGMENT_GROUP = 7;
+    private final int FRAGMENT_GROUP_MEMBER = 8;
 
     private final String FRAGMENT_TAG_MAP = "tag_map";
     private final String FRAGMENT_TAG_LOGIN = "tag_login";
     private final String FRAGMENT_TAG_JOINCREATE = "tag_join_create";
     private final String FRAGMENT_TAG_LOADING = "tag_loading";
     private final String FRAGMENT_TAG_SETTINGS = "tag_settings";
+    private final String FRAGMENT_TAG_GROUPS_LIST = "groups_list";
+    private final String FRAGMENT_TAG_GROUP = "group";
+    private final String FRAGMENT_TAG_GROUP_MEMBER = "group_member";
 
     SettingsFragment settingsFragment;
     MapFragment mapFragment;
     LoginFragment loginFragment;
     CreateJoinGroupFragment createJoinFragment;
     LoadingFragment loadingFragment;
+    GroupsListFragment groupsListFragment;
 
     private int scheduledFragmentID = -1;
     private int scheduledActionCodeForFragmentSwitch = -1;
@@ -195,9 +205,10 @@ public class MainActivity extends AppCompatActivity
 
         CheckIsKeepScreenOnSetting();
 
+        phoneStateReceiver = new BatteryStateChangesReceiver();
         IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_LOW);
         filter.addAction(Intent.ACTION_POWER_CONNECTED);
-        registerReceiver(new BatteryStateChangesReceiver(), filter);
+        registerReceiver(phoneStateReceiver, filter);
     }
 
     private void CheckTokenAndAuth() {
@@ -350,6 +361,10 @@ public class MainActivity extends AppCompatActivity
         }
         SharedPreferencesUtil.SetShouldStopService(this, true);
         SharedPreferencesUtil.ClearSavedMapState(this);
+
+        if(phoneStateReceiver != null)
+            unregisterReceiver(phoneStateReceiver);
+
         super.onDestroy();
     }
 
@@ -681,10 +696,20 @@ public class MainActivity extends AppCompatActivity
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.fl_fragments_container, settingsFragment, FRAGMENT_TAG_SETTINGS);
         transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
-        transaction.addToBackStack("settings");
+        transaction.addToBackStack(FRAGMENT_TAG_SETTINGS);
         transaction.commit();
-        //tv_toolbar_title.setText(getString(R.string.toolbar_title_fragment_settings));
         currentFragmentID = FRAGMENT_ID_SETTINGS;
+    }
+
+    private void SwitchToGroupsListFragment() {
+        if(groupsListFragment == null)
+            groupsListFragment = new GroupsListFragment();
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.fl_fragments_container, groupsListFragment, FRAGMENT_TAG_GROUPS_LIST);
+        transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+        transaction.addToBackStack(FRAGMENT_TAG_GROUPS_LIST);
+        transaction.commit();
+        currentFragmentID = FRAGMENT_ID_GROUPS_LIST;
     }
 
     @Override
@@ -1125,7 +1150,7 @@ public class MainActivity extends AppCompatActivity
                                                             Group group = ds.getValue(Group.class);
                                                             group.setKey(ds.getKey());
                                                             getMyGroupsDictionary().put(group.getGeneratedID(), group);
-                                                            MoveMarkerOnMap(user1.getProfileID(), group.getGeneratedID(), utga.getLastReportedLatitude(), utga.getLastReportedLongitude());
+                                                            MoveMarkerOnMap(user1, group, utga.getLastReportedLatitude(), utga.getLastReportedLongitude());
                                                             j++;
                                                         }
                                                     }
@@ -1135,8 +1160,11 @@ public class MainActivity extends AppCompatActivity
                                                         databaseError.toException().printStackTrace();
                                                     }
                                                 });
-                                    } else
-                                        MoveMarkerOnMap(user1.getProfileID(), group.getGeneratedID(), utga.getLastReportedLatitude(), utga.getLastReportedLongitude());
+                                    } else{
+                                        if(utga.getLastReportedLatitude() != null && utga.getLastReportedLongitude() != null)
+                                            MoveMarkerOnMap(user1, group, utga.getLastReportedLatitude(), utga.getLastReportedLongitude());
+                                    }
+
                                 }
                             }
 
@@ -1161,7 +1189,7 @@ public class MainActivity extends AppCompatActivity
                                         Group group = ds.getValue(Group.class);
                                         group.setKey(ds.getKey());
                                         getMyGroupsDictionary().put(group.getGeneratedID(), group);
-                                        MoveMarkerOnMap(user.getProfileID(), group.getGeneratedID(), utga.getLastReportedLatitude(), utga.getLastReportedLongitude());
+                                        MoveMarkerOnMap(user, group, utga.getLastReportedLatitude(), utga.getLastReportedLongitude());
                                         j++;
                                     }
                                 }
@@ -1171,14 +1199,17 @@ public class MainActivity extends AppCompatActivity
                                     databaseError.toException().printStackTrace();
                                 }
                             });
-                } else
-                    MoveMarkerOnMap(user.getProfileID(), group.getGeneratedID(), utga.getLastReportedLatitude(), utga.getLastReportedLongitude());
+                } else{
+                    if(utga.getLastReportedLatitude() != null && utga.getLastReportedLongitude() != null)
+                        MoveMarkerOnMap(user, group, utga.getLastReportedLatitude(), utga.getLastReportedLongitude());
+                }
+
             }
     }
 
-    private void MoveMarkerOnMap(String userName, String groupName, double lat, double lng){
+    private void MoveMarkerOnMap(User user, Group group, double lat, double lng){
         if(mapFragment != null)//todo: add check if I'm tracking this group
-            mapFragment.MoveMarker(userName, groupName, lat, lng);
+            mapFragment.MoveMarker(user, group, lat, lng);
     }
 
     private void NotifyUserLeftGroup(UserToGroupAssignment utga) {
@@ -1296,6 +1327,7 @@ public class MainActivity extends AppCompatActivity
                     ShowSnackLoginFirst();
                 } else {
                     progressDialog = UIUtil.ShowProgressDialog(this, getString(R.string.progress_loading));
+                    SwitchToGroupsListFragment();
                 }
                 break;
             case R.id.btn_side_menu_about:
@@ -1476,6 +1508,13 @@ public class MainActivity extends AppCompatActivity
     public void HideSoftKeyboard() {
         InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(Activity.INPUT_METHOD_SERVICE);
         inputMethodManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
+    }
+
+    @Override
+    public void MakeFabsVisibleForGroupsList() {
+        HideSoftKeyboard();
+        SetFabsVisible(true);
+        currentFragmentID = FRAGMENT_ID_GROUPS_LIST;
     }
 
     //endregion

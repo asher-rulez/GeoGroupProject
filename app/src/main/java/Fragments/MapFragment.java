@@ -225,9 +225,10 @@ public class MapFragment extends SupportMapFragment
 
         ArrayList<UserToGroupAssignment> utgas = mListener.getUTGAsForShowing();
         for (UserToGroupAssignment utga : utgas) {
-            getMyMarkers().put(utga.getGroupID() + ":" + utga.getUserProfileID(),
-                    AddMarker(utga.getLastReportedLatitude(), utga.getLastReportedLongitude(),
-                            utga.getGroup().getName() + ":" + utga.getUser().getUsername(), icon));
+            if(utga.getLastReportedLatitude() != null && utga.getLastReportedLongitude() != null)
+                getMyMarkers().put(utga.getGroupID() + ":" + utga.getUserProfileID(),
+                        AddMarker(utga.getLastReportedLatitude(), utga.getLastReportedLongitude(),
+                                utga.getGroup().getName() + ":" + utga.getUser().getUsername(), icon));
         }
     }
 
@@ -375,12 +376,12 @@ public class MapFragment extends SupportMapFragment
         return googleMap.addMarker(newMarker);
     }
 
-    public void MoveMarker(String username, String groupname, double latitude, double longitude) {
-        Marker m = getMyMarkers().get(groupname + ":" + username);
+    public void MoveMarker(User user, Group group, double latitude, double longitude) {
+        Marker m = getMyMarkers().get(group.getGeneratedID() + ":" + user.getProfileID());
         if (m != null) {
             LatLngInterpolator.Linear interpolator = new LatLngInterpolator.Linear();
             animateMarker(m, new LatLng(latitude, longitude), interpolator);
-        }
+        } else AddMarkerForNewUser(user, group, latitude, longitude);
     }
 
     static void animateMarker(Marker marker, LatLng newPosition, final LatLngInterpolator interpolator) {
