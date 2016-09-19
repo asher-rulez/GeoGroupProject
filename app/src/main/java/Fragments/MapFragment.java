@@ -163,7 +163,8 @@ public class MapFragment extends SupportMapFragment
     @Override
     public void onDestroy() {
         super.onDestroy();
-        mapView.onDestroy();
+        if(mapView != null)
+            mapView.onDestroy();
         SharedPreferencesUtil.ClearSavedMapState(getContext());
         if (mGoogleApiClient != null && mGoogleApiClient.isConnected())
             mGoogleApiClient.disconnect();
@@ -397,10 +398,20 @@ public class MapFragment extends SupportMapFragment
         animator.start();
     }
 
-    public void RemoveMarker(String username, String groupname) {
-        Marker m = getMyMarkers().get(groupname + ":" + username);
+    public void RemoveMarker(String groupKey, String profileID) {
+        Marker m = getMyMarkers().get(groupKey + ":" + profileID);
         if (m != null)
             m.remove();
+    }
+
+    public void RemoveMarkersByGroup(String groupKey){
+        for(String m : getMyMarkers().keySet()){
+            String[] markerNameParts = m.split(":");
+            if(groupKey.equals(markerNameParts[0])){
+                getMyMarkers().get(m).remove();
+                getMyMarkers().remove(m);
+            }
+        }
     }
 
     //endregion

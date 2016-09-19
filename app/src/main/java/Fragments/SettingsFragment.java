@@ -197,6 +197,8 @@ public class SettingsFragment extends Fragment implements View.OnClickListener {
                 SharedPreferencesUtil.SetLocationRefreshFrequency(getContext(), getFrequencyOptions().get(frequencyTitles.get(i)));
                 if(LocationListenerService.IsServiceRunning){
                     GeoGroupProjectApplication.getInstance().stopLocationReportService();
+                }
+                if(SharedPreferencesUtil.GetIfReportLocationFromSharedPreferences(getContext())){
                     Intent serviceIntent = new Intent(getContext(), LocationListenerService.class);
                     getContext().startService(serviceIntent);
                 }

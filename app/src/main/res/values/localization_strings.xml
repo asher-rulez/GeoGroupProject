@@ -53,6 +53,7 @@
     <!-- Main activity -->
 
     <string name="snackbar_user_joined_group">User {0} joined group {1}</string>
+    <string name="snackbar_group_removed">Group {0} removed</string>
     <string name="toolbar_title_fragment_map">GeoGroup</string>
     <string name="toolbar_title_fragment_create_group">Create group</string>
     <string name="toolbar_title_fragment_join_group">Join group</string>

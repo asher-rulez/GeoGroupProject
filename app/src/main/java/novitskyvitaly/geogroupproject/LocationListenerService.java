@@ -255,7 +255,7 @@ public class LocationListenerService extends Service implements GoogleApiClient.
         Log.i(MY_TAG, "onLocationChanged");
         SendLocationUpdatesToFirebase(location);
         SharedPreferencesUtil.SaveLocationInSharedPreferences(
-                this, mLastLocation.getLatitude(), mLastLocation.getLongitude(), new Date());
+                this, location.getLatitude(), location.getLongitude(), new Date());
         Intent intent = new Intent(GeoGroupBroadcastReceiver.BROADCAST_REC_INTENT_FILTER);
         intent.putExtra(GeoGroupBroadcastReceiver.BROADCAST_EXTRA_ACTION_KEY,
                 GeoGroupBroadcastReceiver.ACTION_CODE_USER_LOCATION_RECEIVED);
