@@ -157,7 +157,8 @@ public class MapFragment extends SupportMapFragment
         super.onPause();
         mapView.onPause();
         mListener.hideFabsOnMapPaused();
-        SharedPreferencesUtil.SaveMapStateInSharedPrefs(getContext(), googleMap.getCameraPosition());
+        if(googleMap != null)
+            SharedPreferencesUtil.SaveMapStateInSharedPrefs(getContext(), googleMap.getCameraPosition());
     }
 
     @Override
@@ -226,7 +227,11 @@ public class MapFragment extends SupportMapFragment
 
         ArrayList<UserToGroupAssignment> utgas = mListener.getUTGAsForShowing();
         for (UserToGroupAssignment utga : utgas) {
-            if(utga.getLastReportedLatitude() != null && utga.getLastReportedLongitude() != null)
+            if(utga.getLastReportedLatitude() != null
+                    && utga.getLastReportedLongitude() != null
+                    && utga.getGroup() != null
+                    && utga.getUser() != null
+                    && getMyMarkers().get(utga.getGroupID() + ":" + utga.getUserProfileID()) == null)
                 getMyMarkers().put(utga.getGroupID() + ":" + utga.getUserProfileID(),
                         AddMarker(utga.getLastReportedLatitude(), utga.getLastReportedLongitude(),
                                 utga.getGroup().getName() + ":" + utga.getUser().getUsername(), icon));

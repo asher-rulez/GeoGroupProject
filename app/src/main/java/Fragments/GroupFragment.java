@@ -2,6 +2,7 @@ package Fragments;
 
 
 import android.content.Context;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
@@ -12,7 +13,15 @@ import android.widget.CheckBox;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
+import com.google.firebase.database.ValueEventListener;
+
 import DataModel.Group;
+import DataModel.UserToGroupAssignment;
 import Utils.FirebaseUtil;
 import Utils.SharedPreferencesUtil;
 import novitskyvitaly.geogroupproject.R;
@@ -26,6 +35,7 @@ public class GroupFragment extends Fragment implements View.OnClickListener {
     IGroupFragmentInteraction mListener;
 
     Group group;
+    UserToGroupAssignment userToGroupAssignment;
     String groupKey;
 
     TextView tv_group_key;
@@ -58,9 +68,12 @@ public class GroupFragment extends Fragment implements View.OnClickListener {
         btn_share_group.setOnClickListener(this);
         rl_track = (RelativeLayout)view.findViewById(R.id.rl_btn_group_fragment_track);
         rl_track.setOnClickListener(this);
+        rl_track.setEnabled(false);
         cb_is_track = (CheckBox)view.findViewById(R.id.cb_group_fragment_track);
+        cb_is_track.setEnabled(false);
         rl_members = (RelativeLayout)view.findViewById(R.id.rl_btn_group_fragment_members);
         rl_members.setOnClickListener(this);
+        rl_members.setEnabled(false);
         tv_group_fragment_members = (TextView)view.findViewById(R.id.tv_group_fragment_members);
         btn_messages = (Button)view.findViewById(R.id.btn_group_fragment_messages);
         btn_messages.setOnClickListener(this);
@@ -111,14 +124,60 @@ public class GroupFragment extends Fragment implements View.OnClickListener {
                 setGroup(group);
             }
         });
+        FirebaseUtil.GetMyGroupsQuery(getContext()).addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        if(dataSnapshot.hasChildren()){
+                            for(DataSnapshot ds : dataSnapshot.getChildren()){
+                                UserToGroupAssignment utga = ds.getValue(UserToGroupAssignment.class);
+                                if(utga.getUserProfileID().equals(SharedPreferencesUtil.GetMyProfileID(getContext()))){
+                                    utga.setKey(ds.getKey());
+                                    SetUserToGroupAssignment(utga);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+                        databaseError.toException().printStackTrace();
+                    }
+                });
+        FirebaseUtil.GetUsersOfGroupQuery(getContext(), groupKey).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                int count = 0;
+                if(dataSnapshot.hasChildren()){
+                    for(DataSnapshot ds : dataSnapshot.getChildren())
+                        count++;
+                }
+                tv_group_fragment_members.setText(String.valueOf(count));
+                rl_members.setEnabled(true);
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                databaseError.toException().printStackTrace();
+            }
+        });
+    }
+
+    private void SetUserToGroupAssignment(UserToGroupAssignment userToGroupAssignment){
+        this.userToGroupAssignment = userToGroupAssignment;
+        cb_is_track.setChecked(this.userToGroupAssignment.getIsTracking());
+        cb_is_track.setEnabled(true);
+        rl_track.setEnabled(true);
     }
 
     @Override
     public void onClick(View view) {
         switch (view.getId()){
             case R.id.btn_send_group_data:
+                mListener.sendGroupJoinData(group.getGeneratedID(), group.getPassword());
                 break;
             case R.id.rl_btn_group_fragment_track:
+                SwitchIsTracking();
                 break;
             case R.id.rl_btn_group_fragment_members:
                 break;
@@ -131,8 +190,27 @@ public class GroupFragment extends Fragment implements View.OnClickListener {
         }
     }
 
-    public interface IGroupFragmentInteraction extends ICommonFragmentInteraction{
+    private void SwitchIsTracking(){
+        final boolean prevValue = userToGroupAssignment.getIsTracking();
+        userToGroupAssignment.setIsTracking(!prevValue);
+        DatabaseReference dref = FirebaseDatabase.getInstance()
+                .getReference(getString(R.string.firebase_user_to_group_assignment))
+                .child(userToGroupAssignment.getKey());
+        dref.setValue(userToGroupAssignment, new DatabaseReference.CompletionListener() {
+            @Override
+            public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
+                if(databaseError != null){
+                    databaseError.toException().printStackTrace();
+                    userToGroupAssignment.setIsTracking(prevValue);
+                }
+                else
+                    cb_is_track.setChecked(!prevValue);
+            }
+        });
+    }
 
+    public interface IGroupFragmentInteraction extends ICommonFragmentInteraction{
+        void sendGroupJoinData(String groupKey, String groupPassword);
     }
 
 }

@@ -174,8 +174,7 @@ public class MainActivity extends AppCompatActivity
 
     private final String SAVED_INSTANCE_STATE_KEY_GROUPS_DICTIONARY = "group";
     private final String SAVED_INSTANCE_STATE_KEY_USERS_DICTIONARY = "users";
-    private final String SAVED_INSTANCE_STATE_KEY_USERS_BY_GROUP_KEY_QUERIES = "UBG_queries";
-    private final String SAVED_INSTANCE_STATE_KEY_MY_GROUPS_QUERY = "groups_query";
+    private final String SAVED_INSTANCE_STATE_KEY_FRAGMENT_ID = "fragment_id";
 
     //endregion
 
@@ -207,6 +206,7 @@ public class MainActivity extends AppCompatActivity
                     (HashMap<String, Group>) savedInstanceState.getSerializable(SAVED_INSTANCE_STATE_KEY_GROUPS_DICTIONARY));
             handlerThreadFbDbListener.getUsersDictionary().putAll(
                     (HashMap<String, User>) savedInstanceState.getSerializable(SAVED_INSTANCE_STATE_KEY_USERS_DICTIONARY));
+            currentFragmentID = savedInstanceState.getInt(SAVED_INSTANCE_STATE_KEY_FRAGMENT_ID);
         }
 
         CheckIsKeepScreenOnSetting();
@@ -306,7 +306,7 @@ public class MainActivity extends AppCompatActivity
         if (!isGoogleServiceAvailable)
             OnGooglePlayServicesCheckError();
 
-        if(!SharedPreferencesUtil.GetMyProfileID(this).equals("")) {
+        if (!SharedPreferencesUtil.GetMyProfileID(this).equals("")) {
             RestartListenerHandler();
         }
         tmpMyGroupsDictionary = null;
@@ -315,11 +315,13 @@ public class MainActivity extends AppCompatActivity
         super.onResume();
     }
 
-    private void RestartListenerHandler(){
-        if(handlerThreadFbDbListener != null
-            &&handlerThreadFbDbListener.isAlive()) return;
+    private void RestartListenerHandler() {
+        if (handlerThreadFbDbListener != null
+                && handlerThreadFbDbListener.isAlive()) return;
         if (handlerThreadFbDbListener == null)
             handlerThreadFbDbListener = new FbDbEventsHandlerThread("listener", android.os.Process.THREAD_PRIORITY_BACKGROUND);
+        handlerThreadFbDbListener.setMyGroupsDictionary(tmpMyGroupsDictionary);
+        handlerThreadFbDbListener.setUsersDictionary(tmpUsersDictionary);
         handlerThreadFbDbListener.start();
         handlerThreadFbDbListener.setContext(getApplicationContext());
         handlerThreadFbDbListener.SetCallback(listenerCallbackHandler);
@@ -369,7 +371,7 @@ public class MainActivity extends AppCompatActivity
         SharedPreferencesUtil.SetShouldStopService(this, true);
         SharedPreferencesUtil.ClearSavedMapState(this);
 
-        if(phoneStateReceiver != null)
+        if (phoneStateReceiver != null)
             unregisterReceiver(phoneStateReceiver);
 
         super.onDestroy();
@@ -388,7 +390,7 @@ public class MainActivity extends AppCompatActivity
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(intent);
             }
-            if(currentFragmentID == FRAGMENT_ID_JOINCREATE){
+            if (currentFragmentID == FRAGMENT_ID_JOINCREATE) {
                 if (currentFragmentID == FRAGMENT_ID_JOINCREATE && createJoinFragment != null)
                     createJoinFragment.ClearFields();
                 getSupportFragmentManager().popBackStackImmediate();
@@ -400,10 +402,11 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
-        if(tmpMyGroupsDictionary != null)
+        if (tmpMyGroupsDictionary != null)
             outState.putSerializable(SAVED_INSTANCE_STATE_KEY_GROUPS_DICTIONARY, tmpMyGroupsDictionary);
-        if(tmpUsersDictionary != null)
+        if (tmpUsersDictionary != null)
             outState.putSerializable(SAVED_INSTANCE_STATE_KEY_USERS_DICTIONARY, tmpUsersDictionary);
+        outState.putInt(SAVED_INSTANCE_STATE_KEY_FRAGMENT_ID, currentFragmentID);
         super.onSaveInstanceState(outState);
     }
 
@@ -525,12 +528,12 @@ public class MainActivity extends AppCompatActivity
         fab_plus.startAnimation(anim);
         fab_plus.setClickable(isVisible);
 */
-        if(isVisible){
+        if (isVisible) {
             fab_plus.setVisibility(FloatingActionButton.VISIBLE);
             fab_create_group.setVisibility(isExpanded ? FloatingActionButton.VISIBLE : FloatingActionButton.GONE);
             fab_join_group.setVisibility(isExpanded ? FloatingActionButton.VISIBLE : FloatingActionButton.GONE);
         } else {
-            if(isExpanded)
+            if (isExpanded)
                 CollapseFabs(true);
             else {
                 fab_plus.setVisibility(FloatingActionButton.GONE);
@@ -617,13 +620,12 @@ public class MainActivity extends AppCompatActivity
     private void SwitchToMapFragment() {
         if (CommonUtil.GetIsApplicationRunningInForeground(this)) {
             currentFragmentID = FRAGMENT_ID_MAP;
-            if (mapFragment == null){
+            if (mapFragment == null) {
                 mapFragment = new MapFragment();
-            }
-            else {
+            } else {
                 boolean fragmentPopped
-                    = getSupportFragmentManager().popBackStackImmediate(mapFragment.getClass().getName(), 0);
-                if(fragmentPopped) return;
+                        = getSupportFragmentManager().popBackStackImmediate(mapFragment.getClass().getName(), 0);
+                if (fragmentPopped) return;
             }
             FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
             transaction.replace(R.id.fl_fragments_container, mapFragment, FRAGMENT_TAG_MAP);
@@ -693,7 +695,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void SwitchToGroupsListFragment() {
-        if(groupsListFragment == null)
+        if (groupsListFragment == null)
             groupsListFragment = new GroupsListFragment();
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.fl_fragments_container, groupsListFragment, FRAGMENT_TAG_GROUPS_LIST);
@@ -703,8 +705,8 @@ public class MainActivity extends AppCompatActivity
         currentFragmentID = FRAGMENT_ID_GROUPS_LIST;
     }
 
-    private void SwitchToGroupFragment(String groupKey){
-        if(groupFragment == null)
+    private void SwitchToGroupFragment(String groupKey) {
+        if (groupFragment == null)
             groupFragment = new GroupFragment();
         groupFragment.setGroupKey(groupKey);
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
@@ -781,15 +783,19 @@ public class MainActivity extends AppCompatActivity
         onBackPressed();
 
         if (ifSendData && !TextUtils.isEmpty(groupID) && !TextUtils.isEmpty(groupPassword)) {
-            Intent smsIntent = new Intent(Intent.ACTION_SEND);
-            smsIntent.setType("text/plain");
-            //smsIntent.setData(Uri.parse("smsto:"));
-            smsIntent.putExtra(Intent.EXTRA_TEXT, "join: groupID = " + groupID + " and password = " + groupPassword);
-            if (smsIntent.resolveActivity(getPackageManager()) != null)
-                startActivity(smsIntent);
+            SendGroupInvitationData(groupID, groupPassword);
         }
         //todo: start listening to group
         //todo: ifSendData => send group data via sms
+    }
+
+    private void SendGroupInvitationData(String groupID, String groupPassword) {
+        Intent smsIntent = new Intent(Intent.ACTION_SEND);
+        smsIntent.setType("text/plain");
+        //smsIntent.setData(Uri.parse("smsto:"));
+        smsIntent.putExtra(Intent.EXTRA_TEXT, "join: groupID = " + groupID + " and password = " + groupPassword);
+        if (smsIntent.resolveActivity(getPackageManager()) != null)
+            startActivity(smsIntent);
     }
 
     @Override
@@ -799,31 +805,32 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onCheckAuthorizationCompleted(int actionCode, boolean isAuthorized, String nickName) {
-        switch (currentFragmentID){
-            case FRAGMENT_ID_SETTINGS:
-                SwitchToSettingsFragment();
-                break;
-            default:
-                switch (actionCode) {
-                    case ACTION_CODE_START_SCREEN_ON_STARTUP:
-                        if (isAuthorized) {
-                            Log.i(MY_TAG, "authorized, continue to map");
-                            SwitchToMapFragment();
-                            RestartListenerHandler();
-                        } else {
-                            Log.i(MY_TAG, "not authorized, continue to login");
-                            SwitchToLoginFragment(actionCode);
-                        }
-                        break;
-                    case ACTION_CODE_FOR_CREATE_GROUP:
-                    case ACTION_CODE_FOR_JOIN_GROUP:
-                        if (isAuthorized)
-                            JoinCreateGroupByActionCodeAndAuthType(actionCode);
-                        else SwitchToLoginFragmentForActionCode(actionCode);
-                        break;
+//        switch (currentFragmentID){
+//            case FRAGMENT_ID_SETTINGS:
+//                SwitchToSettingsFragment();
+//                break;
+//            default:
+        switch (actionCode) {
+            case ACTION_CODE_START_SCREEN_ON_STARTUP:
+                if (isAuthorized) {
+                    Log.i(MY_TAG, "authorized, continue to map");
+                    if (currentFragmentID == -1 || currentFragmentID == FRAGMENT_ID_LOADING)
+                        SwitchToMapFragment();
+                    RestartListenerHandler();
+                } else {
+                    Log.i(MY_TAG, "not authorized, continue to login");
+                    SwitchToLoginFragment(actionCode);
                 }
                 break;
+            case ACTION_CODE_FOR_CREATE_GROUP:
+            case ACTION_CODE_FOR_JOIN_GROUP:
+                if (isAuthorized)
+                    JoinCreateGroupByActionCodeAndAuthType(actionCode);
+                else SwitchToLoginFragmentForActionCode(actionCode);
+                break;
         }
+//                break;
+//        }
     }
 
     private void JoinCreateGroupByActionCodeAndAuthType(int actionCode) {
@@ -839,7 +846,7 @@ public class MainActivity extends AppCompatActivity
     //region location report service
 
     private synchronized void StartLocationReportService() {
-        if(LocationListenerService.IsServiceRunning)
+        if (LocationListenerService.IsServiceRunning)
             return;
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                 || ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -852,9 +859,8 @@ public class MainActivity extends AppCompatActivity
     //region runtime data model and event listeners
 
 
-
-    private void MoveMarkerOnMap(User user, Group group, double lat, double lng){
-        if(mapFragment != null)//todo: add check if I'm tracking this group
+    private void MoveMarkerOnMap(User user, Group group, double lat, double lng) {
+        if (mapFragment != null)//todo: add check if I'm tracking this group
             mapFragment.MoveMarker(user, group, lat, lng);
     }
 
@@ -992,7 +998,7 @@ public class MainActivity extends AppCompatActivity
             public void onAnimationEnd(Animation animation) {
                 fab_plus.setOnClickListener(clickListener);
                 fab_plus.clearAnimation();
-                if(makePlusInvisible) fab_plus.setVisibility(FloatingActionButton.GONE);
+                if (makePlusInvisible) fab_plus.setVisibility(FloatingActionButton.GONE);
             }
 
             @Override
@@ -1067,17 +1073,16 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void SettingIfKeepScreenOn(boolean flag) {
-        if(flag){
+        if (flag) {
             getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             Log.i(MY_TAG, "set to screen on");
-        }
-        else{
+        } else {
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             Log.i(MY_TAG, "set to screen off");
         }
     }
 
-    private void CheckIsKeepScreenOnSetting(){
+    private void CheckIsKeepScreenOnSetting() {
         SettingIfKeepScreenOn(SharedPreferencesUtil.GetKeepScreenOn(this));
     }
 
@@ -1112,44 +1117,46 @@ public class MainActivity extends AppCompatActivity
     private static final String HANDLER_MESSAGE_EXTRA_GROUP = "group";
     private static final String HANDLER_MESSAGE_EXTRA_USER = "user";
     private static final String HANDLER_MESSAGE_EXTRA_UTGA = "utga";
+    private static final String HANDLER_MESSAGE_EXTRA_SHOW_SNACKBAR = "show_snackbar";
 
     @Override
     public boolean handleMessage(Message message) {
-        switch (message.what){
+        switch (message.what) {
             case HANDLER_MESSAGE_TYPE_GROUP_REMOVED:
-                Group group = (Group)message.getData().getSerializable(HANDLER_MESSAGE_EXTRA_GROUP);
+                Group group = (Group) message.getData().getSerializable(HANDLER_MESSAGE_EXTRA_GROUP);
                 handleGroupRemoved(group);
                 break;
             case HANDLER_MESSAGE_TYPE_USER_LEFT_GROUP:
-                Group group1 = (Group)message.getData().getSerializable(HANDLER_MESSAGE_EXTRA_GROUP);
-                User user1 = (User)message.getData().getSerializable(HANDLER_MESSAGE_EXTRA_USER);
-                UserToGroupAssignment utga1 = (UserToGroupAssignment)message.getData().getSerializable(HANDLER_MESSAGE_EXTRA_UTGA);
+                Group group1 = (Group) message.getData().getSerializable(HANDLER_MESSAGE_EXTRA_GROUP);
+                User user1 = (User) message.getData().getSerializable(HANDLER_MESSAGE_EXTRA_USER);
+                UserToGroupAssignment utga1 = (UserToGroupAssignment) message.getData().getSerializable(HANDLER_MESSAGE_EXTRA_UTGA);
                 NotifyUserLeftGroup(utga1, user1, group1);
                 break;
             case HANDLER_MESSAGE_TYPE_START_SERVICE:
                 StartLocationReportService();
                 break;
             case HANDLER_MESSAGE_TYPE_USER_JOINED_GROUP:
-                Group group2 = (Group)message.getData().getSerializable(HANDLER_MESSAGE_EXTRA_GROUP);
-                User user2 = (User)message.getData().getSerializable(HANDLER_MESSAGE_EXTRA_USER);
-                UserToGroupAssignment utga2 = (UserToGroupAssignment)message.getData().getSerializable(HANDLER_MESSAGE_EXTRA_UTGA);
-                NotifyUserJoinedGroup(utga2, user2, group2);
+                Group group2 = (Group) message.getData().getSerializable(HANDLER_MESSAGE_EXTRA_GROUP);
+                User user2 = (User) message.getData().getSerializable(HANDLER_MESSAGE_EXTRA_USER);
+                UserToGroupAssignment utga2 = (UserToGroupAssignment) message.getData().getSerializable(HANDLER_MESSAGE_EXTRA_UTGA);
+                boolean showSnackbar = message.getData().getBoolean(HANDLER_MESSAGE_EXTRA_SHOW_SNACKBAR);
+                NotifyUserJoinedGroup(utga2, user2, group2, showSnackbar);
                 break;
             case HANDLER_MESSAGE_TYPE_USER_UPDATED_LOCATION:
-                Group group3 = (Group)message.getData().getSerializable(HANDLER_MESSAGE_EXTRA_GROUP);
-                User user3 = (User)message.getData().getSerializable(HANDLER_MESSAGE_EXTRA_USER);
-                UserToGroupAssignment utga3 = (UserToGroupAssignment)message.getData().getSerializable(HANDLER_MESSAGE_EXTRA_UTGA);
+                Group group3 = (Group) message.getData().getSerializable(HANDLER_MESSAGE_EXTRA_GROUP);
+                User user3 = (User) message.getData().getSerializable(HANDLER_MESSAGE_EXTRA_USER);
+                UserToGroupAssignment utga3 = (UserToGroupAssignment) message.getData().getSerializable(HANDLER_MESSAGE_EXTRA_UTGA);
                 MoveMarkerOnMap(user3, group3, utga3.getLastReportedLatitude(), utga3.getLastReportedLongitude());
                 break;
         }
         return true;
     }
 
-    private void handleGroupRemoved(Group group){
+    private void handleGroupRemoved(Group group) {
         Snackbar.make(fab_plus,
                 getString(R.string.snackbar_group_removed).replace("{0}", group.getName()),
                 Snackbar.LENGTH_SHORT).show();
-        if(mapFragment != null){
+        if (mapFragment != null) {
             mapFragment.RemoveMarkersByGroup(group.getGeneratedID());
         }
     }
@@ -1161,13 +1168,19 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    private void NotifyUserJoinedGroup(UserToGroupAssignment utga, User user, Group group) {
+    private void NotifyUserJoinedGroup(UserToGroupAssignment utga, User user, Group group, boolean showSnackbar) {
         Log.i(MY_TAG, "notified user joined group");
-        Snackbar.make(toolbar,
-                getString(R.string.snackbar_user_joined_group).replace("{0}", user.getUsername()).replace("{1}", group.getName()),
-                Snackbar.LENGTH_SHORT).show();
+        if (showSnackbar)
+            Snackbar.make(toolbar,
+                    getString(R.string.snackbar_user_joined_group).replace("{0}", user.getUsername()).replace("{1}", group.getName()),
+                    Snackbar.LENGTH_SHORT).show();
         if (mapFragment != null && utga.getLastReportedLatitude() != null && utga.getLastReportedLongitude() != null)//todo: add check if I'm tracking this group
             mapFragment.AddMarkerForNewUser(user, group, utga.getLastReportedLatitude(), utga.getLastReportedLongitude());
+    }
+
+    @Override
+    public void sendGroupJoinData(String groupKey, String groupPassword) {
+        SendGroupInvitationData(groupKey, groupPassword);
     }
 
     //endregion
@@ -1200,27 +1213,27 @@ public class MainActivity extends AppCompatActivity
             super(name);
         }
 
-        public FbDbEventsHandlerThread(String name, int priority){
+        public FbDbEventsHandlerThread(String name, int priority) {
             super(name, priority);
         }
 
         @Override
         protected void onLooperPrepared() {
             innerHandler = new Handler(getLooper(), this);
-            if(flagShouldStart) innerHandler.sendEmptyMessage(0);
+            if (flagShouldStart) innerHandler.sendEmptyMessage(0);
         }
 
-        public void StartListeningToFbDb(){
-            if(innerHandler != null)
+        public void StartListeningToFbDb() {
+            if (innerHandler != null)
                 innerHandler.sendEmptyMessage(0);
             else flagShouldStart = true;
         }
 
-        public void SetCallback(Handler cb){
+        public void SetCallback(Handler cb) {
             callbackHandler = cb;
         }
 
-        public void setContext(Context ctx){
+        public void setContext(Context ctx) {
             context = ctx.getApplicationContext();
         }
 
@@ -1248,10 +1261,18 @@ public class MainActivity extends AppCompatActivity
             return myGroupsDictionary;
         }
 
+        public synchronized void setMyGroupsDictionary(HashMap<String, Group> groupsDictionary){
+            myGroupsDictionary = groupsDictionary;
+        }
+
         public synchronized HashMap<String, User> getUsersDictionary() {
             if (usersDictionary == null)
                 usersDictionary = new HashMap<>();
             return usersDictionary;
+        }
+
+        public synchronized void setUsersDictionary(HashMap<String, User> usersDictionary){
+            this.usersDictionary = usersDictionary;
         }
 
         public synchronized HashMap<String, Query> getUsersByGroupKeyQueries() {
@@ -1382,7 +1403,7 @@ public class MainActivity extends AppCompatActivity
                             return;
                         }
                         getMyGroupsDictionary().get(utga.getGroupID()).getUserAssignments().remove(utga.getUserProfileID());
-                        if (!utga.getUserProfileID().equals(SharedPreferencesUtil.GetMyProfileID(context))){
+                        if (!utga.getUserProfileID().equals(SharedPreferencesUtil.GetMyProfileID(context))) {
                             User user = getUsersDictionary().get(utga.getUserProfileID());
                             Group group = getMyGroupsDictionary().get(utga.getGroupID());
                             NotifyUserLeftGroupInternal(utga, user, group);
@@ -1404,7 +1425,7 @@ public class MainActivity extends AppCompatActivity
             return userAssignmentsToMyGroupsListener;
         }
 
-        private void NotifyUserLeftGroupInternal(UserToGroupAssignment utga, User user, Group group){
+        private void NotifyUserLeftGroupInternal(UserToGroupAssignment utga, User user, Group group) {
             Message msg = new Message();
             msg.what = HANDLER_MESSAGE_TYPE_USER_LEFT_GROUP;
             Bundle b = new Bundle();
@@ -1421,7 +1442,7 @@ public class MainActivity extends AppCompatActivity
 
         private void NotifyGroupRemoved(Group group) {
             Log.i(MY_TAG, "notified about group removed");
-            if(callbackHandler == null) return;
+            if (callbackHandler == null) return;
             Message msg = new Message();
             msg.what = HANDLER_MESSAGE_TYPE_GROUP_REMOVED;
             Bundle bundle = new Bundle();
@@ -1452,12 +1473,12 @@ public class MainActivity extends AppCompatActivity
             HandleUserJoinedGroup(utga);
         }
 
-        private void notifyStartService(){
+        private void notifyStartService() {
             if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
                     && ContextCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
                     && !LocationListenerService.IsServiceRunning)
                 LocationListenerService.startLocationListenerService(context);
-            else if(callbackHandler != null) {
+            else if (callbackHandler != null) {
                 Message msg = new Message();
                 msg.what = HANDLER_MESSAGE_TYPE_START_SERVICE;
                 callbackHandler.sendMessage(msg);
@@ -1494,12 +1515,11 @@ public class MainActivity extends AppCompatActivity
 
         private void HandleUserJoinedGroup(final UserToGroupAssignment utga) {
             getMyGroupsDictionary().get(utga.getGroupID()).getUserAssignments().put(utga.getUserProfileID(), utga);
-            if (getUsersDictionary().containsKey(utga.getUserProfileID())){
+            if (getUsersDictionary().containsKey(utga.getUserProfileID())) {
                 User user = getUsersDictionary().get(utga.getUserProfileID());
                 Group group = getMyGroupsDictionary().get(utga.getGroupID());
-                NotifyUserJoinedGroupInternal(utga, user, group);
-            }
-            else {
+                NotifyUserJoinedGroupInternal(utga, user, group, false);
+            } else {
                 FirebaseUtil.GetQueryForSingleUserByUserProfileID(context, utga.getUserProfileID())
                         .addListenerForSingleValueEvent(new ValueEventListener() {
                             @Override
@@ -1514,7 +1534,7 @@ public class MainActivity extends AppCompatActivity
                                     user.setKey(ds.getKey());
                                     getUsersDictionary().put(user.getProfileID(), user);
                                     Group group = getMyGroupsDictionary().get(utga.getGroupID());
-                                    NotifyUserJoinedGroupInternal(utga, user, group);
+                                    NotifyUserJoinedGroupInternal(utga, user, group, true);
                                     i++;
                                 }
                             }
@@ -1527,14 +1547,15 @@ public class MainActivity extends AppCompatActivity
             }
         }
 
-        private void NotifyUserJoinedGroupInternal(UserToGroupAssignment utga, User user, Group group){
-            if(callbackHandler == null) return;
+        private void NotifyUserJoinedGroupInternal(UserToGroupAssignment utga, User user, Group group, boolean showSnackbar) {
+            if (callbackHandler == null) return;
             Message msg = new Message();
             msg.what = HANDLER_MESSAGE_TYPE_USER_JOINED_GROUP;
             Bundle b = new Bundle();
             b.putSerializable(HANDLER_MESSAGE_EXTRA_UTGA, utga);
             b.putSerializable(HANDLER_MESSAGE_EXTRA_USER, user);
             b.putSerializable(HANDLER_MESSAGE_EXTRA_GROUP, group);
+            b.putBoolean(HANDLER_MESSAGE_EXTRA_SHOW_SNACKBAR, showSnackbar);
             msg.setData(b);
             callbackHandler.sendMessage(msg);
         }
@@ -1542,7 +1563,7 @@ public class MainActivity extends AppCompatActivity
         private void NotifyUserUpdatedLocation(final UserToGroupAssignment utga) {
             Log.i(MY_TAG, "notified user updated location");
             final User user = getUsersDictionary().get(utga.getUserProfileID());
-            if(user == null){
+            if (user == null) {
                 FirebaseUtil.GetQueryForSingleUserByUserProfileID(context, utga.getUserProfileID())
                         .addListenerForSingleValueEvent(new ValueEventListener() {
                             @Override
@@ -1558,7 +1579,7 @@ public class MainActivity extends AppCompatActivity
                                     getUsersDictionary().put(user1.getProfileID(), user1);
                                     i++;
                                     Group group = getMyGroupsDictionary().get(utga.getGroupID());
-                                    if(group == null){
+                                    if (group == null) {
                                         FirebaseUtil.GetQueryForSingleGroupByGroupKey(context, utga.getGroupID())
                                                 .addListenerForSingleValueEvent(new ValueEventListener() {
                                                     @Override
@@ -1582,8 +1603,8 @@ public class MainActivity extends AppCompatActivity
                                                         databaseError.toException().printStackTrace();
                                                     }
                                                 });
-                                    } else{
-                                        if(utga.getLastReportedLatitude() != null && utga.getLastReportedLongitude() != null)
+                                    } else {
+                                        if (utga.getLastReportedLatitude() != null && utga.getLastReportedLongitude() != null)
                                             notifyUserChangedLocation(user1, group, utga);
                                     }
 
@@ -1597,7 +1618,7 @@ public class MainActivity extends AppCompatActivity
                         });
             } else {
                 Group group = getMyGroupsDictionary().get(utga.getGroupID());
-                if(group == null){
+                if (group == null) {
                     FirebaseUtil.GetQueryForSingleGroupByGroupKey(context, utga.getGroupID())
                             .addListenerForSingleValueEvent(new ValueEventListener() {
                                 @Override
@@ -1621,15 +1642,15 @@ public class MainActivity extends AppCompatActivity
                                     databaseError.toException().printStackTrace();
                                 }
                             });
-                } else{
-                    if(utga.getLastReportedLatitude() != null && utga.getLastReportedLongitude() != null)
+                } else {
+                    if (utga.getLastReportedLatitude() != null && utga.getLastReportedLongitude() != null)
                         notifyUserChangedLocation(user, group, utga);
                 }
 
             }
         }
 
-        private void notifyUserChangedLocation(User user, Group group, UserToGroupAssignment utga){
+        private void notifyUserChangedLocation(User user, Group group, UserToGroupAssignment utga) {
             Message msg = new Message();
             msg.what = HANDLER_MESSAGE_TYPE_USER_UPDATED_LOCATION;
             Bundle b = new Bundle();
