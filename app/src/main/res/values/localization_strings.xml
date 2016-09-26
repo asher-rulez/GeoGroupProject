@@ -95,5 +95,10 @@
     <string name="group_fragment_events">Events</string>
     <string name="group_fragment_leave">Leave group</string>
     <string name="group_fragment_delete">Delete group</string>
+    <string name="message_confirm_leave_delete_group">Are you sure you want to {0} group?</string>
+    <string name="message_to_delete">delete</string>
+    <string name="message_to_leave">leave</string>
+    <string name="progress_delete_group">Deleting group</string>
+    <string name="progress_leave_group">Leave group</string>
 
 </resources>

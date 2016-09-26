@@ -1153,9 +1153,9 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void handleGroupRemoved(Group group) {
-        Snackbar.make(fab_plus,
-                getString(R.string.snackbar_group_removed).replace("{0}", group.getName()),
-                Snackbar.LENGTH_SHORT).show();
+//        Snackbar.make(fab_plus,
+//                getString(R.string.snackbar_group_removed).replace("{0}", group.getName()),
+//                Snackbar.LENGTH_SHORT).show();
         if (mapFragment != null) {
             mapFragment.RemoveMarkersByGroup(group.getGeneratedID());
         }
@@ -1181,6 +1181,11 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void sendGroupJoinData(String groupKey, String groupPassword) {
         SendGroupInvitationData(groupKey, groupPassword);
+    }
+
+    @Override
+    public void backToGroupsOnGroupLeftDeleted() {
+        onBackPressed();
     }
 
     //endregion

@@ -10,6 +10,12 @@ import Utils.FirebaseUtil;
 public class UserStatusUpdates implements IFirebaseSavable {
     private final String MY_TAG = "geog_status_update";
 
+    public static final String USER_STATUS_UPDATES_KEY_DATE = "createUnixTime";
+    public static final String USER_STATUS_UPDATES_KEY_TYPE = "statusUpdateTypeID";
+    public static final String USER_STATUS_UPDATES_KEY_MESSAGE = "message";
+    public static final String USER_STATUS_UPDATES_KEY_GROUP_ID = "groupID";
+    public static final String USER_STATUS_UPDATES_KEY_USER_ID = "userProfileID";
+
     public UserStatusUpdates() { }
 
     private String key;

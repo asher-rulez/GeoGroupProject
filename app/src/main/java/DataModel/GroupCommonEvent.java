@@ -10,6 +10,14 @@ import Utils.FirebaseUtil;
 public class GroupCommonEvent implements IFirebaseSavable {
     private final String MY_TAG = "geog_commonEvent";
 
+    public final static String GROUP_COMMON_EVENT_KEY_LATITUDE = "lat";
+    public final static String GROUP_COMMON_EVENT_KEY_LONGITUDE = "lng";
+    public final static String GROUP_COMMON_EVENT_KEY_GROUP_ID = "groupID";
+    public final static String GROUP_COMMON_EVENT_KEY_USER_ID = "userProfileID";
+    public final static String GROUP_COMMON_EVENT_KEY_DATE = "createdUnixTime";
+    public final static String GROUP_COMMON_EVENT_KEY_MESSAGE = "message";
+    public final static String GROUP_COMMON_EVENT_KEY_VALID_UNTIL = "validUntilUnixTime";
+
     public GroupCommonEvent(){ }
 
     private String key;

@@ -1,10 +1,12 @@
 package Fragments;
 
 
+import android.app.ProgressDialog;
 import android.content.Context;
-import android.os.AsyncTask;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v7.app.AlertDialog;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,13 +19,14 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
 import DataModel.Group;
 import DataModel.UserToGroupAssignment;
+import novitskyvitaly.geogroupproject.LeaveDeleteGroupIntentService;
 import Utils.FirebaseUtil;
 import Utils.SharedPreferencesUtil;
+import Utils.UIUtil;
 import novitskyvitaly.geogroupproject.R;
 
 /**
@@ -48,6 +51,8 @@ public class GroupFragment extends Fragment implements View.OnClickListener {
     Button btn_messages;
     Button btn_events;
     Button btn_leave_delete_group;
+
+    ProgressDialog progressDialog;
 
     public GroupFragment() {
         // Required empty public constructor
@@ -117,7 +122,7 @@ public class GroupFragment extends Fragment implements View.OnClickListener {
         mListener.SetMainToolbarGoToMapVisible(true);
     }
 
-    private void reloadGroup(String groupKey){
+    private void reloadGroup(final String groupKey){
         FirebaseUtil.GetSingleGroupReferenceByGroupKey(getContext(), groupKey, new FirebaseUtil.IFirebaseInitListenersCallback() {
             @Override
             public void OnSingleGroupResolved(Group group) {
@@ -130,7 +135,8 @@ public class GroupFragment extends Fragment implements View.OnClickListener {
                         if(dataSnapshot.hasChildren()){
                             for(DataSnapshot ds : dataSnapshot.getChildren()){
                                 UserToGroupAssignment utga = ds.getValue(UserToGroupAssignment.class);
-                                if(utga.getUserProfileID().equals(SharedPreferencesUtil.GetMyProfileID(getContext()))){
+                                String str = groupKey;
+                                if(utga.getGroupID().equals(str)){
                                     utga.setKey(ds.getKey());
                                     SetUserToGroupAssignment(utga);
                                     break;
@@ -186,8 +192,61 @@ public class GroupFragment extends Fragment implements View.OnClickListener {
             case R.id.btn_group_fragment_events:
                 break;
             case R.id.btn_group_fragment_leave_delete:
+                ConfirmLeaveDeleteGroup();
                 break;
         }
+    }
+
+    private void ConfirmLeaveDeleteGroup(){
+        final boolean isMyGroup = group.getOwnerProfileID().equals(SharedPreferencesUtil.GetMyProfileID(getContext()));
+        new AlertDialog.Builder(getContext())
+                .setMessage(getString(R.string.message_confirm_leave_delete_group)
+                        .replace("{0}", isMyGroup
+                                ? getString(R.string.message_to_delete) : getString(R.string.message_to_leave)))
+                .setPositiveButton(getString(R.string.common_yes), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        if(progressDialog != null){
+                            progressDialog.dismiss();
+                        }
+                        LeaveDeleteGroup(group.getGeneratedID(), isMyGroup);
+                        dialogInterface.dismiss();
+                        progressDialog = UIUtil.ShowProgressDialog(getContext(),
+                                getString(isMyGroup ? R.string.progress_delete_group : R.string.progress_leave_group));
+                    }
+                })
+                .setNegativeButton(getString(R.string.common_cancel), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.dismiss();
+                    }
+                })
+                .create()
+                .show();
+    }
+
+    private void LeaveDeleteGroup(final String groupKey, final boolean isMyGroup){
+//        FirebaseDatabase.getInstance().getReference().child(getString(R.string.firebase_location_reports)).setValue(null);
+        DatabaseReference utgaReference
+                = FirebaseDatabase.getInstance().getReference()
+                .child(getString(R.string.firebase_user_to_group_assignment))
+                .child(userToGroupAssignment.getKey());
+        utgaReference.setValue(null, new DatabaseReference.CompletionListener() {
+            @Override
+            public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
+                if(databaseError != null)
+                    databaseError.toException().printStackTrace();
+                else {
+                    if (isMyGroup)
+                        LeaveDeleteGroupIntentService.startActionDelete(getContext(), groupKey);
+                    else
+                        LeaveDeleteGroupIntentService.startActionLeave(getContext(), groupKey);
+                }
+                if(progressDialog != null)
+                    progressDialog.dismiss();
+                mListener.backToGroupsOnGroupLeftDeleted();
+            }
+        });
     }
 
     private void SwitchIsTracking(){
@@ -211,6 +270,7 @@ public class GroupFragment extends Fragment implements View.OnClickListener {
 
     public interface IGroupFragmentInteraction extends ICommonFragmentInteraction{
         void sendGroupJoinData(String groupKey, String groupPassword);
+        void backToGroupsOnGroupLeftDeleted();
     }
 
 }

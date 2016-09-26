@@ -10,6 +10,13 @@ import Utils.FirebaseUtil;
 public class UserLocationReport implements IFirebaseSavable {
     private final String MY_TAG = "geog_report";
 
+    public static final String USER_LOCATION_REPORT_KEY_LATITUDE = "lat";
+    public static final String USER_LOCATION_REPORT_KEY_LONGITUDE = "lng";
+    public static final String USER_LOCATION_REPORT_KEY_GROUP_ID = "groupID";
+    public static final String USER_LOCATION_REPORT_KEY_USER_ID = "userProfileID";
+    public static final String USER_LOCATION_REPORT_KEY_DATE = "createdUnixTime";
+    public static final String USER_LOCATION_REPORT_KEY_MESSAGE = "message";
+
     public UserLocationReport(){ }
 
     private String key;
