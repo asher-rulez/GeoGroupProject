@@ -16,6 +16,8 @@ import DataModel.GroupCommonEvent;
 import DataModel.UserLocationReport;
 import DataModel.UserStatusUpdates;
 import DataModel.UserToGroupAssignment;
+import Utils.FirebaseUtil;
+import Utils.SharedPreferencesUtil;
 
 public class LeaveDeleteGroupIntentService extends IntentService {
     private static final String ACTION_DELETE = "IntentServices.action.FOO";
@@ -55,7 +57,7 @@ public class LeaveDeleteGroupIntentService extends IntentService {
         }
     }
 
-    private void handleActionDelete(String groupKey) {
+    private void handleActionDelete(final String groupKey) {
         Query utgaQuery = FirebaseDatabase.getInstance().getReference()
                 .child(getString(R.string.firebase_user_to_group_assignment))
                 .orderByChild(UserToGroupAssignment.UTGA_KEY_GROUP_ID)
@@ -80,23 +82,29 @@ public class LeaveDeleteGroupIntentService extends IntentService {
             }
         });
 
-        Query locationUpdatesQuery = FirebaseDatabase.getInstance().getReference()
-                .child(getString(R.string.firebase_location_reports))
-                .orderByChild(UserLocationReport.USER_LOCATION_REPORT_KEY_GROUP_ID)
-                .equalTo(groupKey);
-        locationUpdatesQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+        Query userQuery
+                = FirebaseUtil.GetQueryForSingleUserByUserProfileID(getApplicationContext(),
+                        SharedPreferencesUtil.GetMyProfileID(getApplicationContext()));
+        userQuery.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                if(dataSnapshot.hasChildren())
+                if(dataSnapshot.hasChildren()){
                     for(DataSnapshot ds : dataSnapshot.getChildren()){
-                        ds.getRef().setValue(null, new DatabaseReference.CompletionListener() {
-                            @Override
-                            public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
-                                if(databaseError != null)
-                                    databaseError.toException().printStackTrace();
-                            }
-                        });
+                        String key = ds.getKey();
+                        FirebaseDatabase.getInstance().getReference()
+                                .child(getString(R.string.firebase_child_users))
+                                .child(key)
+                                .child(getString(R.string.firebase_location_reports))
+                                .child(groupKey)
+                                .setValue(null, new DatabaseReference.CompletionListener() {
+                                    @Override
+                                    public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
+                                        if(databaseError != null)
+                                            databaseError.toException().printStackTrace();
+                                    }
+                                });
                     }
+                }
             }
 
             @Override
@@ -104,6 +112,31 @@ public class LeaveDeleteGroupIntentService extends IntentService {
                 databaseError.toException().printStackTrace();
             }
         });
+
+//        Query locationUpdatesQuery = FirebaseDatabase.getInstance().getReference()
+//                .child(getString(R.string.firebase_location_reports))
+//                .orderByChild(UserLocationReport.USER_LOCATION_REPORT_KEY_GROUP_ID)
+//                .equalTo(groupKey);
+//        locationUpdatesQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+//            @Override
+//            public void onDataChange(DataSnapshot dataSnapshot) {
+//                if(dataSnapshot.hasChildren())
+//                    for(DataSnapshot ds : dataSnapshot.getChildren()){
+//                        ds.getRef().setValue(null, new DatabaseReference.CompletionListener() {
+//                            @Override
+//                            public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
+//                                if(databaseError != null)
+//                                    databaseError.toException().printStackTrace();
+//                            }
+//                        });
+//                    }
+//            }
+//
+//            @Override
+//            public void onCancelled(DatabaseError databaseError) {
+//                databaseError.toException().printStackTrace();
+//            }
+//        });
 
         Query groupEventsQuery = FirebaseDatabase.getInstance().getReference()
                 .child(getString(R.string.firebase_group_common_events))

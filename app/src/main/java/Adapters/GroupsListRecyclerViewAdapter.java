@@ -3,6 +3,7 @@ package Adapters;
 import android.content.Context;
 import android.support.v4.app.FragmentActivity;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,6 +39,22 @@ public class GroupsListRecyclerViewAdapter extends RecyclerView.Adapter<GroupsLi
         context = ctx;
         myGroupsQuery = FirebaseUtil.GetMyGroupsQuery(context);
         myGroupsQuery.addChildEventListener(getMyGroupsQueryListener());
+        myGroupsQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if(dataSnapshot.hasChildren()){
+                    int i = 0;
+                    for(DataSnapshot ds : dataSnapshot.getChildren())
+                        i++;
+                    Log.e(MY_TAG, String.valueOf(i));
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
     }
 
     public void clear(){

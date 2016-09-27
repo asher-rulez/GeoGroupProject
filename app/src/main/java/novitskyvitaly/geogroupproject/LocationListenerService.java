@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 
+import DataModel.User;
 import DataModel.UserLocationReport;
 import DataModel.UserToGroupAssignment;
 import Utils.CommonUtil;
@@ -279,7 +280,7 @@ public class LocationListenerService extends Service implements GoogleApiClient.
                     return;
                 }
                 for (DataSnapshot dataSnapshot : ds.getChildren()) {
-                    UserToGroupAssignment utga = dataSnapshot.getValue(UserToGroupAssignment.class);
+                    final UserToGroupAssignment utga = dataSnapshot.getValue(UserToGroupAssignment.class);
                     if (utga == null) {
                         Log.e(MY_TAG, "got null utga from query");
                         return;
@@ -298,22 +299,44 @@ public class LocationListenerService extends Service implements GoogleApiClient.
                                 }
                             });
                     if(SharedPreferencesUtil.GetIfSaveHistory(getBaseContext())){
-                        UserLocationReport locationReport = new UserLocationReport();
-                        locationReport.setGroupID(utga.getGroupID());
-                        locationReport.setUserProfileID(utga.getUserProfileID());
-                        locationReport.setLat(location.getLatitude());
-                        locationReport.setLng(location.getLongitude());
-                        locationReport.setCreatedUnixTime(new Date().getTime());
-                        FirebaseDatabase.getInstance().getReference()
-                                .child(getString(R.string.firebase_location_reports))
-                                .push()
-                                .setValue(locationReport, new DatabaseReference.CompletionListener() {
-                                    @Override
-                                    public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
-                                        if (databaseError != null)
-                                            databaseError.toException().printStackTrace();
+                        Query userQuery
+                                = FirebaseUtil.GetQueryForSingleUserByUserProfileID(getApplicationContext(),
+                                        SharedPreferencesUtil.GetMyProfileID(getApplicationContext()));
+                        userQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+                            @Override
+                            public void onDataChange(DataSnapshot dataSnapshot) {
+                                if(dataSnapshot.hasChildren()){
+                                    for(DataSnapshot ds : dataSnapshot.getChildren()){
+                                        String key = ds.getKey();
+                                        UserLocationReport locationReport = new UserLocationReport();
+                                        locationReport.setGroupID(utga.getGroupID());
+                                        locationReport.setUserProfileID(utga.getUserProfileID());
+                                        locationReport.setLat(location.getLatitude());
+                                        locationReport.setLng(location.getLongitude());
+                                        locationReport.setCreatedUnixTime(new Date().getTime());
+                                        FirebaseDatabase.getInstance().getReference()
+                                                .child(getString(R.string.firebase_child_users))
+                                                .child(key)
+                                                .child(getString(R.string.firebase_location_reports))
+                                                .child(utga.getGroupID())
+                                                .push()
+                                                .setValue(locationReport, new DatabaseReference.CompletionListener() {
+                                                    @Override
+                                                    public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
+                                                        if (databaseError != null)
+                                                            databaseError.toException().printStackTrace();
+                                                    }
+                                                });
                                     }
-                                });
+                                }
+                            }
+
+                            @Override
+                            public void onCancelled(DatabaseError databaseError) {
+                                databaseError.toException().printStackTrace();
+                            }
+                        });
+
                     }
                 }
             }
