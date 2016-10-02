@@ -29,9 +29,6 @@ import Utils.SharedPreferencesUtil;
 import Utils.UIUtil;
 import novitskyvitaly.geogroupproject.R;
 
-/**
- * A simple {@link Fragment} subclass.
- */
 public class GroupFragment extends Fragment implements View.OnClickListener {
     private final static String MY_TAG = "geog_group";
 

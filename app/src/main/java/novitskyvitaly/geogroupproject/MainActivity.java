@@ -117,6 +117,8 @@ public class MainActivity extends AppCompatActivity
     Button btn_side_menu_settings;
     Button btn_side_menu_about;
 
+    int performActionAfterDrawerClose = -1;
+
     TextView tv_toolbar_title;
 
     FloatingActionButton fab_plus;
@@ -446,6 +448,7 @@ public class MainActivity extends AppCompatActivity
             public void onDrawerClosed(View drawerView) {
                 super.onDrawerClosed(drawerView);
                 isSideMenuOpened = false;
+                closeDrawerWithAction();
             }
 
             @Override
@@ -867,7 +870,6 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onClick(View view) {
-        String profileID;
         switch (view.getId()) {
             case R.id.fab_plus:
                 if (isExpanded) {
@@ -886,6 +888,17 @@ public class MainActivity extends AppCompatActivity
                 progressDialog = UIUtil.ShowProgressDialog(this, getString(R.string.progress_loading));
                 FirebaseUtil.CheckAuthForActionCode(this, ACTION_CODE_FOR_JOIN_GROUP, this);
                 break;
+            default:
+                performActionAfterDrawerClose = view.getId();
+                if (drawer.isDrawerOpen(GravityCompat.START))
+                    drawer.closeDrawer(GravityCompat.START);
+                break;
+        }
+    }
+
+    private void closeDrawerWithAction(){
+        String profileID;
+        switch (performActionAfterDrawerClose){
             case R.id.btn_side_menu_settings:
                 profileID = SharedPreferencesUtil.GetMyProfileID(this);
                 if (profileID.equals("")) {
@@ -916,8 +929,7 @@ public class MainActivity extends AppCompatActivity
                 progressDialog = UIUtil.ShowProgressDialog(this, getString(R.string.progress_loading));
                 break;
         }
-        if (drawer.isDrawerOpen(GravityCompat.START))
-            drawer.closeDrawer(GravityCompat.START);
+        performActionAfterDrawerClose = -1;
     }
 
     private void ShowSnackLoginFirst() {
