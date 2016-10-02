@@ -34,7 +34,7 @@ public class GroupsListRecyclerViewAdapter extends RecyclerView.Adapter<GroupsLi
     ChildEventListener myGroupsQueryListener;
     private IGroupsListRecyclerViewInteraction callbackListener;
 
-    public GroupsListRecyclerViewAdapter(Context ctx, IGroupsListRecyclerViewInteraction callbackListener){
+    public GroupsListRecyclerViewAdapter(Context ctx, final IGroupsListRecyclerViewInteraction callbackListener){
         this.callbackListener = callbackListener;
         context = ctx;
         myGroupsQuery = FirebaseUtil.GetMyGroupsQuery(context);
@@ -47,7 +47,8 @@ public class GroupsListRecyclerViewAdapter extends RecyclerView.Adapter<GroupsLi
                     for(DataSnapshot ds : dataSnapshot.getChildren())
                         i++;
                     Log.e(MY_TAG, String.valueOf(i));
-                }
+                } else
+                    callbackListener.onFoundNoGroups();
             }
 
             @Override
@@ -253,5 +254,6 @@ public class GroupsListRecyclerViewAdapter extends RecyclerView.Adapter<GroupsLi
     public interface IGroupsListRecyclerViewInteraction{
         void onGroupSelected(String groupKey);
         void onFirstGroupLoaded();
+        void onFoundNoGroups();
     }
 }

@@ -10,6 +10,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import Adapters.GroupsListRecyclerViewAdapter;
 import novitskyvitaly.geogroupproject.R;
@@ -22,6 +23,7 @@ public class GroupsListFragment extends Fragment implements GroupsListRecyclerVi
     private RecyclerView rv_groups_list;
     GroupsListRecyclerViewAdapter adapter;
     ProgressBar pb_loading_groups;
+    TextView tv_groups_not_found;
 
     public GroupsListFragment() {
         // Required empty public constructor
@@ -34,7 +36,7 @@ public class GroupsListFragment extends Fragment implements GroupsListRecyclerVi
         rv_groups_list = (RecyclerView)view.findViewById(R.id.rv_groups_list);
         initRecyclerView();
         pb_loading_groups = (ProgressBar)view.findViewById(R.id.pb_loading_groups);
-
+        tv_groups_not_found = (TextView)view.findViewById(R.id.tv_groups_list_not_found);
         return view;
     }
 
@@ -74,6 +76,13 @@ public class GroupsListFragment extends Fragment implements GroupsListRecyclerVi
     @Override
     public void onFirstGroupLoaded() {
         pb_loading_groups.setVisibility(ProgressBar.GONE);
+        tv_groups_not_found.setVisibility(View.GONE);
+    }
+
+    @Override
+    public void onFoundNoGroups() {
+        pb_loading_groups.setVisibility(ProgressBar.GONE);
+        tv_groups_not_found.setVisibility(View.VISIBLE);
     }
 
     public interface IGroupsListFragmentInteraction extends ICommonFragmentInteraction {

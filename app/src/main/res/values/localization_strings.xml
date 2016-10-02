@@ -84,6 +84,10 @@
     <string name="status_update_joined_group">I joined group</string>
     <string name="status_update_battery_low">My battery is low</string>
 
+    <!-- groups list fragment -->
+
+    <string name="groups_not_found">No groups found</string>
+
     <!-- group fragment -->
 
     <string name="group_fragment_property_group_id">Group key:</string>
